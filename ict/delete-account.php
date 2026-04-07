@@ -4,26 +4,24 @@ if($_SESSION['role'] !== 'ict'){
   die('Access Denied!');
 }
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-if(!$conn){
-  die("Database connection failed" . mysqli_connect_error());
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch(PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
 if(isset($_GET['id'])){
   $id = $_GET['id'];
   
   $sql = "DELETE FROM users WHERE id = ?";
-  $stmt = mysqli_prepare($conn, $sql);
-  mysqli_stmt_bind_param($stmt, "i", $id);
+  $stmt = $conn->prepare($sql);
   
-  if(mysqli_stmt_execute($stmt)){
-    mysqli_stmt_close($stmt);
-    mysqli_close($conn);
+  if($stmt->execute([$id])){
     header("Location: get-account.php?deleted=1");
     exit;
   } else {
-    mysqli_stmt_close($stmt);
-    mysqli_close($conn);
     header("Location: get-account.php?error=1");
     exit;
   }

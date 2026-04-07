@@ -4,9 +4,12 @@ if($_SESSION['role'] !== 'ict'){
   die('Access Denied!');
 }
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-if(!$conn){
-  die("Database connection failed" . mysqli_connect_error());
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch(PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
 if($_SERVER['REQUEST_METHOD'] === 'POST'){
@@ -20,22 +23,18 @@ if($_SERVER['REQUEST_METHOD'] === 'POST'){
   if(!empty($password)){
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
     $sql = "UPDATE users SET name = ?, role = ?, position = ?, username = ?, password = ? WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "sssssi", $name, $role,$position, $username, $hashed_password, $id);
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$name, $role, $position, $username, $hashed_password, $id]);
   } else {
     $sql = "UPDATE users SET name = ?, role = ?, position = ?, username = ? WHERE id = ?";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "ssssi", $name, $role, $position, $username, $id);
+    $stmt = $conn->prepare($sql);
+    $result = $stmt->execute([$name, $role, $position, $username, $id]);
   }
 
-  if(mysqli_stmt_execute($stmt)){
-    mysqli_stmt_close($stmt);
-    mysqli_close($conn);
+  if($result){
     header("Location: get-account.php?success=1");
     exit;
   } else {
-    mysqli_stmt_close($stmt);
-    mysqli_close($conn);
     header("Location: get-account.php?error=1");
     exit;
   }

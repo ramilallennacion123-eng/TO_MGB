@@ -6,12 +6,13 @@ body {
 }
 
 .dashboard-container {
-    max-width: 1250px;
+    max-width: 100%;
     margin: 0 auto;
     background: white;
     padding: 30px;
     border-radius: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    overflow-x: auto;
 }
 
 .top-bar {
@@ -87,6 +88,7 @@ th, td {
     padding: 15px;
     text-align: left;
     border-bottom: 1px solid #dcdde1;
+    white-space: nowrap;
 }
 
 th {
@@ -101,7 +103,7 @@ tr:hover {
 .action-buttons {
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 }
 
 .btn-review {

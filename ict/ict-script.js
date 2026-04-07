@@ -22,10 +22,19 @@ document.getElementById('createAccForm').addEventListener('submit', function(e) 
     })
     .then(res => res.json())
     .then(data => {
-        showPopup(data.message, data.success ? 'success' : 'error');
         if(data.success) {
-            document.getElementById('createAccModal').style.display='none';
-            this.reset();
+            sessionStorage.setItem('accountMessage', data.message);
+            location.reload();
+        } else {
+            showPopup(data.message, 'error');
         }
     });
+});
+
+window.addEventListener('DOMContentLoaded', function() {
+    const message = sessionStorage.getItem('accountMessage');
+    if(message) {
+        showPopup(message, 'success');
+        sessionStorage.removeItem('accountMessage');
+    }
 });

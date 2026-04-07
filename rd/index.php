@@ -6,11 +6,10 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['username']) || !isset($_SE
     exit();
 }
 
-if ($_SESSION['role'] !== 'chief') {
+if ($_SESSION['role'] !== 'rd') {
     die("Access denied.");
 }
 
-$logged_in_do_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 
 $success_message = '';
@@ -27,26 +26,18 @@ $db_pass = '';
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname", $db_user, $db_pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    $sql = "SELECT id, name, position, destination, departure_date, created_at
-            FROM travel_orders
-            WHERE officer_id = :officer_id AND status = 'pending_do'
-            ORDER BY created_at DESC";
-    
-    $stmt = $pdo->prepare($sql);
-    $stmt->bindParam(':officer_id', $logged_in_do_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $pending_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    $sql2 = "SELECT name FROM users WHERE id = :user_id";
-    $stmt2 = $pdo->prepare($sql2);
-    $stmt2->bindParam(':user_id', $logged_in_do_id, PDO::PARAM_INT);
-    $stmt2->execute();
-    $user_data = $stmt2->fetch(PDO::FETCH_ASSOC);
-
 } catch (PDOException $e) {
-    die("Database error: " . $e->getMessage());
+    die("Database connection failed: " . $e->getMessage());
 }
+
+$sql = "SELECT id, name, position, destination, departure_date, created_at
+        FROM travel_orders
+        WHERE status = 'pending_rd'
+        ORDER BY created_at DESC";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute();
+$pending_orders = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -54,15 +45,17 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TO - Division Chief Account</title>
+    <title>TO - Regional Director Account</title>
     <link rel="stylesheet" type="text/css" href="../style/email-style.css">
     <link rel="stylesheet" type="text/css" href="../style/pop-up-message.css">
      <?php include '../includes/header.php';?>
 </head>
 <body>
-    <div class="dashboard-container"> 
-        <h2>TRAVEL ORDER</h2>  
-        <p>You have <strong><?php echo count($pending_orders); ?></strong> travel orders waiting for your approval.</p>
+
+    <div class="dashboard-container">
+        <h2>TRAVEL ORDER</h2>
+        <p>You have <strong><?php echo count($pending_orders); ?></strong> travel orders waiting for Regional Director approval.</p>
+
         <?php if (count($pending_orders) > 0): ?>
             <table>
                 <thead>
@@ -116,6 +109,12 @@ try {
         document.getElementById('popupMessage').style.display = 'block';
     };
     <?php endif; ?>
+    
+    // Prevent going back after logout
+    history.pushState(null, null, location.href);
+    window.onpopstate = function () {
+        history.go(1);
+    };
     </script>
 
 </body>

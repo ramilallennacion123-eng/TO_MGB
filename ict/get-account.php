@@ -112,16 +112,20 @@
         <div class="modal-content">
             <h3>Create Account</h3>
             <form method="post" id="createAccForm">
+                <div>Select Role</div>
                 <select name="role" required>
                     <option value="">Select Role</option>
                     <option value="ict">ICT</option>
                     <option value="planner">Planner</option>
-                    <option value="admin">Admin</option>
+                    <option value="rd">RD</option>
                     <option value="chief">Chief</option>
                 </select>
-                <input type="text" name="name" placeholder="Full Name">
-                <input type="text" name="username" placeholder="Username" required>
-                <input type="password" name="password" placeholder="Password" required>
+                <div>Full Name</div>
+                <input type="text" name="name" placeholder="Ex. Juan Dela Cruz" required>
+                <div>Username</div>
+                <input type="text" name="username" placeholder="Ex. juan_123" required>
+                <div>Password</div>
+                <input type="password" name="password" placeholder="********" required>
                 <div class="modal-buttons">
                     <button type="submit" class="submit-btn">Create</button>
                     <button type="button" class="cancel-btn" onclick="document.getElementById('createAccModal').style.display='none'">Cancel</button>

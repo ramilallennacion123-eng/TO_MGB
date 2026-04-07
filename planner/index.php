@@ -80,7 +80,7 @@ if ($tab === 'all' || $tab === 'orders') {
 /* FETCH TRAVEL CLEARANCES */
 $travel_clearances = [];
 if ($tab === 'all' || $tab === 'clearances') {
-    $sql_clearances = "SELECT id, name, pap_code, location, travel_date, created_at, status
+    $sql_clearances = "SELECT id, name, location, travel_date, created_at, status
                        FROM travel_clearances
                        WHERE planner_id = :planner_id AND status = 'pending_planner'
                        ORDER BY created_at DESC";
@@ -106,6 +106,7 @@ $total_items = count($travel_orders) + count($travel_clearances);
 </head>
 <body>
     <div class="dashboard-container">
+        <h2>Welcome</h2>
         <p>You have <strong><?php echo $total_items; ?></strong> planner items to review.</p>
 
         <div class="tabs">
@@ -164,7 +165,6 @@ $total_items = count($travel_orders) + count($travel_clearances);
                         <tr>
                             <th>Date Submitted</th>
                             <th>Name of Fieldmen</th>
-                            <th>PAP Code</th>
                             <th>Location</th>
                             <th>Travel Date</th>
                             <th>Action</th>
@@ -175,9 +175,8 @@ $total_items = count($travel_orders) + count($travel_clearances);
                             <tr>
                                 <td><?php echo date('M d, Y', strtotime($tc['created_at'])); ?></td>
                                 <td><?php echo htmlspecialchars($tc['name']); ?></td>
-                                <td><?php echo htmlspecialchars($tc['pap_code']); ?></td>
                                 <td><?php echo htmlspecialchars($tc['location']); ?></td>
-                                <td><?php echo date('M d, Y', strtotime($tc['travel_date'])); ?></td>
+                                <td><?php echo htmlspecialchars($tc['travel_date']); ?></td>
                                 <td>
                                     <div class="action-buttons">
                                         <a href="review_tc.php?id=<?php echo $tc['id']; ?>" class="btn-review">Review</a>

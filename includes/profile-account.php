@@ -281,8 +281,8 @@ mysqli_close($conn);
   function redirectToUserIndex() {
     const role = '<?php echo $_SESSION['role']; ?>';
     switch(role) {
-      case 'admin':
-        window.location.href = '../admin/index.php';
+      case 'rd':
+        window.location.href = '../rd/index.php';
         break;
       case 'chief':
         window.location.href = '../chief/division_officer.php';

@@ -17,6 +17,9 @@ $user_data = mysqli_fetch_assoc($result);
 ?>
 <div class="universal-header">
     <div class ="user-info"><?php echo htmlspecialchars(strtoupper($user_data['role'])) . ' - ' . htmlspecialchars($user_data['name'] ?? $_SESSION['username']); ?></div>
+    <?php if($user_data['role'] === 'ict'): ?>
+    <a href="<?php echo ($_SESSION['role'] === 'ict') ? 'get-account.php' : '../ict/get-account.php'; ?>" class="accounts-btn">Accounts</a>
+    <?php endif; ?>
     <div class="user-menu">
         <img src="../images/mgb_logo.png" alt="" class="profile">
         <div class="dropdown-menu">
@@ -82,5 +85,19 @@ body{
     font-weight: bold;
     color: black;
     font-size: 20px;
+}
+.accounts-btn{
+    background:#4CAF50;
+    color:white;
+    padding:10px 20px;
+    border-radius:5px;
+    text-decoration:none;
+    font-weight:bold;
+    transition:background 0.3s;
+    position: absolute;
+    right: 250px;
+}
+.accounts-btn:hover{
+    background:#45a049;
 }
 </style>

@@ -55,7 +55,7 @@ if ($tab === 'all' || $tab === 'orders') {
 /* FETCH TRAVEL CLEARANCES */
 $travel_clearances = [];
 if ($tab === 'all' || $tab === 'clearances') {
-    $sql_clearances = "SELECT id, name, pap_code, location, travel_date, created_at, status
+    $sql_clearances = "SELECT id, name, location, travel_date, created_at, status
                        FROM travel_clearances";
     
     if (!empty($search)) {
@@ -80,19 +80,6 @@ $total_items = count($travel_orders) + count($travel_clearances);
 /* DELETE TRAVEL CLEARANCE */
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_clearance_btn'])) {
     $delete_id = (int) $_POST['delete_id'];
-
-    $get_sql = "SELECT applicant_signature FROM travel_clearances WHERE id = :id";
-    $get_stmt = $pdo->prepare($get_sql);
-    $get_stmt->bindParam(':id', $delete_id, PDO::PARAM_INT);
-    $get_stmt->execute();
-    $clearance = $get_stmt->fetch(PDO::FETCH_ASSOC);
-    
-    if($clearance && !empty($clearance['applicant_signature'])){
-        $file_path = '../' . $clearance['applicant_signature'];
-        if(file_exists($file_path)){
-            unlink($file_path);
-        }
-    }
 
     $delete_sql = "DELETE FROM travel_clearances WHERE id = :id";
     $delete_stmt = $pdo->prepare($delete_sql);
@@ -144,10 +131,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
 </head>
 <body>
  <div class="dashboard-container">
-        <a href="get-account.php"><button class="btn-create">Accounts</button></a>
-
-        <p>You have <strong><?php echo $total_items; ?></strong> items to review.<?php if (!empty($search)): ?> <span style="color: #666;">(Filtered by: "<?php echo htmlspecialchars($search); ?>")</span><?php endif; ?></p>
-
         <div class="tabs">
             <a href="index.php?tab=all" class="tab-link <?php echo ($tab === 'all') ? 'active' : ''; ?>">All</a>
             <a href="index.php?tab=orders" class="tab-link <?php echo ($tab === 'orders') ? 'active' : ''; ?>">Travel Orders</a>
@@ -163,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
             </form>
         </div>
         </div>
-
+         <p>You have <strong><?php echo $total_items; ?></strong> items to review.<?php if (!empty($search)): ?> <span style="color: #666;">(Filtered by: "<?php echo htmlspecialchars($search); ?>")</span><?php endif; ?></p>
         <?php if ($tab === 'all' || $tab === 'orders'): ?>
             <div class="section-title">Travel Orders</div>
 
@@ -181,14 +164,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($travel_orders as $order): ?>
+                        <?php foreach ($travel_orders as $order): 
+                            switch($order['status']){
+                                case 'pending_do':
+                                    $status_change = 'Waiting for Division Chief Approval';
+                                    break;
+                                case 'pending_rd':
+                                    $status_change = 'Waiting for Regional Director Approval';
+                                    break;
+                                case 'approved':
+                                    $status_change = 'Travel Order Approved';
+                                    break;
+                                case 'completed':
+                                    $status_change = 'Travel Order Completed';
+                                    break;
+                                default:
+                                    $status_change = 'Unknown Status';
+                            }
+                        ?>
                             <tr>
                                 <td><?php echo date('M d, Y', strtotime($order['created_at'])); ?></td>
                                 <td><?php echo htmlspecialchars($order['name']); ?></td>
                                 <td><?php echo htmlspecialchars($order['position']); ?></td>
                                 <td><?php echo htmlspecialchars($order['destination']); ?></td>
                                 <td><?php echo date('M d, Y', strtotime($order['departure_date'])); ?></td>
-                                <td><span class="badge"><?php echo htmlspecialchars($order['status']); ?></span></td>
+                                <td><span class="badge"><?php echo htmlspecialchars($status_change); ?></span></td>
                                 <td>
                                     <div class="action-buttons">
                                         <a href="review_to.php?id=<?php echo $order['id']; ?>" class="btn-review">Review</a>
@@ -216,7 +216,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                         <tr>
                             <th>Date Submitted</th>
                             <th>Name of Fieldmen</th>
-                            <th>PAP Code</th>
                             <th>Location</th>
                             <th>Travel Date</th>
                             <th>Status</th>
@@ -224,14 +223,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($travel_clearances as $tc): ?>
+                        <?php foreach ($travel_clearances as $tc): 
+                            switch($tc['status']){
+                                case 'pending_planner':
+                                    $status_change = 'Waiting for Planner Approval';
+                                    break;
+                                case 'approved_planner':
+                                    $status_change = 'Travel Clearance Approved by Planner';
+                                    break;
+                                default:
+                                    $status_change = 'Unknown Status';
+                            }
+                            
+                            ?>
+                            
                             <tr>
                                 <td><?php echo date('M d, Y', strtotime($tc['created_at'])); ?></td>
                                 <td><?php echo htmlspecialchars($tc['name']); ?></td>
-                                <td><?php echo htmlspecialchars($tc['pap_code']); ?></td>
                                 <td><?php echo htmlspecialchars($tc['location']); ?></td>
-                                <td><?php echo date('M d, Y', strtotime($tc['travel_date'])); ?></td>
-                                <td><span class="badge"><?php echo htmlspecialchars($tc['status']); ?></span></td>
+                                <td><?php echo htmlspecialchars($tc['travel_date']); ?></td>
+                                <td><span class="badge"><?php echo htmlspecialchars($status_change); ?></span></td>
                                 <td>
                                     <div class="action-buttons">
                                         <a href="review_tc.php?id=<?php echo $tc['id']; ?>" class="btn-review">Review</a>

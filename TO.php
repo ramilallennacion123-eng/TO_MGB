@@ -1,14 +1,9 @@
 <?php
-session_start();
 
-$conn = mysqli_connect("localhost","root","","to_inventory");
-
-if(!$conn){
-    die("Connection failed!".mysqli_connect_error());
-}
+include ('connect.php');
 
 $sql = "SELECT id, name, role FROM users WHERE role = 'chief' ";
-$all_chief = mysqli_query($conn, $sql);
+$all_chief = $conn->query($sql);
 
 
 ?>
@@ -110,8 +105,7 @@ $all_chief = mysqli_query($conn, $sql);
                     <select name="Officer" id="Officer" required>
                         <option value="">Choose Division Chief</option>
                         <?php 
-                while ($chief = mysqli_fetch_array(
-                        $all_chief,MYSQLI_ASSOC)):; 
+                while ($chief = $all_chief->fetch(PDO::FETCH_ASSOC)):; 
             ?>
                 <option value="<?php echo $chief["id"];
                 ?>">
@@ -130,17 +124,12 @@ $all_chief = mysqli_query($conn, $sql);
                 </div>
                 
                 <div class="submit-row">
-                  <input type="submit" class="preview-btn" name="TO_form" value="Preview" formaction="process_TO.php">
+                 <input type="submit" class="preview-btn" name="TO_form" value="Preview" formaction="process_TO.php"> 
                     <button type="submit" name="process_final_TO" id= "travelOrderData" value="Submit" formaction="process_final_TO.php">Submit</button>
                 </div>
             </div>
-        </form>
-
-        
-    </div>
-
-                
-      
+        </form>  
+    </div>     
 </body>
 </html>
 <script src="function.js"></script>

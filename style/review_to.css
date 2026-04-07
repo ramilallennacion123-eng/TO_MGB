@@ -221,3 +221,15 @@ ul {
   border-radius: 5px;
   cursor: pointer;
 }
+
+.btn-back
+{
+  float: right;
+  background-color: #95a5a6;
+  color: white;
+}
+
+.btn-download-pdf {
+  background-color: #2980b9;
+  color: white;
+}

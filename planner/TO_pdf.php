@@ -34,9 +34,29 @@ $remarks = $T_order['remarks'] ?? '';
 
 $new_departure_date = new DateTime($departure_date);
 $new_arrival_date = new DateTime($arrival_date);
-$officer_id = $T_order['officer_id'] ?? '';
+$officer_id = $T_order['officer_id'] ?? null;
 
-function getSignatureHtml($db_path) {
+
+if($officer_id){
+    $officerquery = "SELECT name, position FROM users WHERE id =:id AND role = 'chief' LIMIT 1";
+    $stmt = $pdo->prepare($officerquery);
+    $stmt ->execute(['id' => $officer_id]);
+    $officer_result = $stmt->fetch(PDO::FETCH_ASSOC);
+}
+if($officer_result){
+    $officer_name = $officer_result['name'];
+    $officer_position = $officer_result['position'];
+}
+
+$rdquerry = "SELECT name, position FROM users WHERE role = 'rd' LIMIT 1";
+$stmt = $pdo->prepare($rdquerry);
+$stmt ->execute();
+$rd_result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+$rd_name = $rd_result['name'];
+$rd_position = $rd_result['position'];
+
+function getSignatureHtml($db_path, $maxWidth = 150, $maxHeight = 70, $minHeight = 50, $minWidth = 80) {
     if (empty($db_path)) {
         return '';
     }
@@ -44,11 +64,31 @@ function getSignatureHtml($db_path) {
     $actual_path = dirname(__DIR__) . '/' . $clean_db_path; 
 
     if (file_exists($actual_path)) {
+        $imageInfo = getimagesize($actual_path);
+        $origWidth = $imageInfo[0];
+        $origHeight = $imageInfo[1];
+        
+        $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight);
+        $newWidth = round($origWidth * $ratio);
+        $newHeight = round($origHeight * $ratio);
+        
+        if ($newHeight < $minHeight) {
+            $ratio = $minHeight / $origHeight;
+            $newWidth = round($origWidth * $ratio);
+            $newHeight = $minHeight;
+        }
+        
+        if ($newWidth < $minWidth) {
+            $ratio = $minWidth / $origWidth;
+            $newWidth = $minWidth;
+            $newHeight = round($origHeight * $ratio);
+        }
+        
         $mime_type = mime_content_type($actual_path);
         $imgData = base64_encode(file_get_contents($actual_path));
         $src = 'data:' . $mime_type . ';base64,' . $imgData;
         
-        return "<img src='" . $src . "' style='max-width: 250px; max-height: 150px; display: block; margin: 0 auto; margin-bottom: -15px;'>";
+        return "<img src='" . $src . "' style='width: " . $newWidth . "px; height: " . $newHeight . "px; display: block; margin: 0 auto; margin-bottom: 0px;'>";
     } else {
         return "<div style='color: red; font-size: 10px;'>Error: Image not found at " . htmlspecialchars($actual_path) . "</div>";
     }
@@ -58,29 +98,11 @@ $applicant_sign = $T_order['applicant_signature'] ?? '';
 $do_sign = $T_order['do_signature'] ?? '';
 $rd_sign = $T_order['rd_signature'] ?? '';
 
-$applicant_signatureHtml = getSignatureHtml($applicant_sign);
-$do_signatureHtml        = getSignatureHtml($do_sign);
-$rd_signatureHtml        = getSignatureHtml($rd_sign);
+$applicant_signatureHtml = getSignatureHtml($applicant_sign, 150, 100, 60, 100);
+$do_signatureHtml        = getSignatureHtml($do_sign, 150, 60, 45, 80);
+$rd_signatureHtml        = getSignatureHtml($rd_sign, 150, 60, 45, 80);
 
-switch($officer_id){
-    case '101':
-        $officer_name = "Antonio C. Marasigan";
-        break;
-    case '102':
-        $officer_name = "Arlene E Dayao";
-        break;
-    }
-
-    switch ($officer_id) {
-    case '101':
-        $officer_position = "Engr. V/Chief MMD";
-        break;
-    case '102':
-        $officer_position = "Division Chief";
-        break;
-    default:
-        $officer_position = "";
-    } 
+ 
 
 $options = new Options();
 $options ->set('isHtml5ParserEnabled', true);
@@ -242,7 +264,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
 
         </table>
         
-        <h5>Certification</h5>
+        <h5>Certifications:</h5>
         <div style="text-indent: 3em; font-size:13px">This is to certify that the travel is necessary and is connected with the function of the 
         official/employee of this Div/Sec/Unit.</div>
 
@@ -250,21 +272,21 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
     <table style="width: 100%; border-collapse: collapse;">
         <tr>
             <td style="width: 50%; vertical-align: bottom;">
-                <p style="font-size:13px; margin-bottom: 20px;">Recommending Approval:</p>
-                <div style="margin-bottom: 5px; position: relative; right:60px">'.$do_signatureHtml.'</div>
-                <p style="font-size:13px; font-weight: bold; margin: 0;">
+                <p style="font-size:13px; margin-bottom: 5px;">Recommending Approval:</p>
+                <div style="text-align: left; margin-bottom: -10px;">'.$do_signatureHtml.'</div>
+                <p style="font-size:13px; font-weight: bold; margin: 0; text-align: left;">
                     <u>'.strtoupper($officer_name).'</u>
                 </p>
-                <p style="font-size:12px; margin: 0;">'.$officer_position.'</p>
+                <p style="font-size:12px; margin: 0; text-align: left;">'.$officer_position.'</p>
             </td>
 
             <td style="width: 50%; vertical-align: bottom;">
-                <p style="font-size:13px; margin-bottom: 20px;">Approved:</p>
-                <div style="margin-bottom: 5px; position:relative;right:50px;">'.$rd_signatureHtml.'</div>
-                <p style="font-size:13px; font-weight: bold; margin: 0;">
-                    <u>GUILLERMO A. MOLINA JR. IV</u>
+                <p style="font-size:13px; margin-bottom: 5px;">Approved:</p>
+                <div style="position:relative; left:20%; margin-bottom: -30px;">'.$rd_signatureHtml.'</div>
+                <p style="font-size:13px; font-weight: bold; margin: 0; text-align: left;">
+                    <u>'.strtoupper($rd_name).'</u>
                 </p>
-                <p style="font-size:12px; margin: 0;">Regional Director</p>
+                <p style="font-size:12px; margin: 0; text-align: left;">'.$rd_position.'</p>
             </td>
         </tr>
     </table>
@@ -275,11 +297,11 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
         for my failure to liquidate this travel within twenty(20) days upon return to my permanent official station pursuant to 
         Commission on Audit(COA) Circular No. 2012-004 dated November 28, 2012.</div>
 
-        <div style="text-align: center; margin-top: 30px; margin-bottom: 0px;">
+        <div style="text-align: center; margin-top: 10 px; margin-bottom: -20px;">
             ' .$applicant_signatureHtml. '
             </div>
 
-        <h5 style="text-align:center; margin-bottom:0px; margin-top: 0px;">'.strtoupper($name).'</h5>
+        <h4 style="text-align:center; margin-bottom:0px; margin-top: 10px;">'.strtoupper($name).'</h4>
         <div style="font-size:12px;text-align:center; margin-bottom:0px;">Official Employee</div>
         ';
 

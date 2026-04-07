@@ -1,35 +1,45 @@
 <?php
-session_start();
+include ('connect.php');
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-
-if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
+if (isset($_SESSION['user_id']) && isset($_SESSION['role'])) {
+    switch($_SESSION['role']) {
+        case 'rd':
+            header("Location: rd/index.php");
+            exit();
+        case 'chief':
+            header("Location: chief/division_officer.php");
+            exit();
+        case 'ict':
+            header("Location: ict/index.php");
+            exit();
+        case 'planner':
+            header("Location: planner/index.php");
+            exit();
+    }
 }
 
 $error_msg = "";
 
 if (isset($_POST['login_btn'])) {
     
-    $user_input = mysqli_real_escape_string($conn, $_POST['username']);
+    $user_input = $_POST['username'];
     $pass_input = $_POST['password'];
 
     $query = "SELECT * FROM users WHERE username = ?";
-    $stmt  = mysqli_prepare($conn, $query);
-    mysqli_stmt_bind_param($stmt, "s", $user_input);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
+    $stmt = $conn->prepare($query);
+    $stmt->execute([$user_input]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($user = mysqli_fetch_assoc($result)) {
+    if ($user) {
         if (password_verify($pass_input, $user['password']) || $pass_input === $user['password']) {
             
             $_SESSION['user_id']  = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['role']     = $user['role'];
-            $_SESSION['planner']  = $user['planner'];
+            $_SESSION['planner']  = isset($user['planner']) ? $user['planner'] : null;
 
-            if ($user['role'] == 'admin') {
-                header("Location: admin/index.php");
+            if ($user['role'] == 'rd') {
+                header("Location: rd/index.php");
                 exit();
             } elseif ($user['role'] == 'chief') {
                 header("Location: chief/division_officer.php");
@@ -81,4 +91,13 @@ if (isset($_POST['login_btn'])) {
 </div>
 
 </body>
+
+<script>
+// Prevent going back to this page after login
+history.pushState(null, null, location.href);
+window.onpopstate = function () {
+    history.go(1);
+};
+</script>
+
 </html>

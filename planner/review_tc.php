@@ -1,10 +1,12 @@
 <?php
 session_start();
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-
-if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch(PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['username']) || !isset($_SESSION['role'])) {
@@ -31,24 +33,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['approve_btn'])) {
                    SET status = 'approved_planner'
                    WHERE id = ? AND planner_id = ? AND status = 'pending_planner'";
 
-    $update_stmt = mysqli_prepare($conn, $update_sql);
+    $update_stmt = $conn->prepare($update_sql);
 
     if ($update_stmt) {
-        mysqli_stmt_bind_param($update_stmt, "ii", $clearance_id, $logged_in_planner_id);
-        mysqli_stmt_execute($update_stmt);
-
-        if (mysqli_stmt_affected_rows($update_stmt) > 0) {
-            mysqli_stmt_close($update_stmt);
+        if ($update_stmt->execute([$clearance_id, $logged_in_planner_id])) {
             $_SESSION['success_message'] = 'Travel Clearance approved successfully!';
             header("Location: index.php");
             exit();
             
         } else {
-            mysqli_stmt_close($update_stmt);
             die("Unable to approve this travel clearance. It may not belong to your account or it may already be processed.");
         }
     } else {
-        die("Error updating record: " . mysqli_error($conn));
+        die("Error updating record: " . $conn->errorInfo()[2]);
     }
 }
 
@@ -56,16 +53,13 @@ $sql = "SELECT *
         FROM travel_clearances
         WHERE id = ? AND planner_id = ? AND status = 'pending_planner'";
 
-$stmt = mysqli_prepare($conn, $sql);
+$stmt = $conn->prepare($sql);
 
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "ii", $clearance_id, $logged_in_planner_id);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $clearance = mysqli_fetch_assoc($result);
-    mysqli_stmt_close($stmt);
+    $stmt->execute([$clearance_id, $logged_in_planner_id]);
+    $clearance = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {
-    die("Error fetching data: " . mysqli_error($conn));
+    die("Error fetching data: " . $conn->errorInfo()[2]);
 }
 
 if (!$clearance) {
@@ -77,8 +71,6 @@ $purposes = json_decode($clearance['purpose'], true);
 if (!is_array($purposes)) {
     $purposes = [];
 }
-
-mysqli_close($conn);
 ?>
 
 <!DOCTYPE html>
@@ -95,8 +87,7 @@ mysqli_close($conn);
         <h1>Review Travel Clearance</h1>
 
         <div class="detail-grid">
-            <div class="detail-item"><strong>Name of Fieldmen</strong> <?php echo htmlspecialchars($clearance['name']); ?></div>
-            <div class="detail-item"><strong>PAP Code</strong> <?php echo htmlspecialchars($clearance['pap_code']); ?></div>
+            <div class="detail-item full-width"><strong>Name of Fieldmen</strong> <?php echo htmlspecialchars($clearance['name']); ?></div>
             <div class="detail-item full-width"><strong>Location</strong> <?php echo htmlspecialchars($clearance['location']); ?></div>
             <div class="detail-item full-width"><strong>Travel Date</strong> <?php echo htmlspecialchars($clearance['travel_date']); ?></div>
 

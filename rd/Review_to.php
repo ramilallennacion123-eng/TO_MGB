@@ -14,11 +14,11 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['username']) || !isset($_SE
     exit();
 }
 
-if ($_SESSION['role'] !== 'planner') {
+if ($_SESSION['role'] !== 'rd') {
     die("Access denied.");
 }
 
-$logged_in_planner_id = $_SESSION['user_id'];
+$logged_in_rd_id = $_SESSION['user_id'];
 $username = $_SESSION['username'];
 
 if (!isset($_GET['id']) || empty($_GET['id'])) {
@@ -27,30 +27,37 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 
 $order_id = (int) $_GET['id'];
 
+$signature_sql = "SELECT user_signature FROM users WHERE id = ?";
+$signature_stmt = $conn->prepare($signature_sql);
+$signature_stmt->execute([$logged_in_rd_id]);
+$signature_data = $signature_stmt->fetch(PDO::FETCH_ASSOC);
+
+$rd_saved_signature = $signature_data['user_signature'] ?? '';
+
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['approve_btn'])) {
 
-    $update_sql = "UPDATE travel_orders
-                   SET status = 'completed'
-                   WHERE id = ? AND status = 'approved'";
+    $update_sql = "UPDATE travel_orders 
+                   SET status = 'approved', rd_signature = ? 
+                   WHERE id = ? AND status = 'pending_rd'";
 
     $update_stmt = $conn->prepare($update_sql);
 
     if ($update_stmt) {
-        if ($update_stmt->execute([$order_id])) {
-            $_SESSION['success_message'] = 'Travel Order completed successfully!';
-            header("Location: index.php?tab=orders");
+        if ($update_stmt->execute([$rd_saved_signature, $order_id])) {
+            $_SESSION['success_message'] = 'Travel Order approved successfully!';
+            header("Location: index.php");
             exit();
         } else {
-            die("Unable to complete this travel order. It may already be processed.");
+            die("Unable to approve this travel order. It may already be processed.");
         }
     } else {
         die("Error updating record: " . $conn->errorInfo()[2]);
     }
 }
 
-$sql = "SELECT *
-        FROM travel_orders
-        WHERE id = ? AND status = 'approved'";
+$sql = "SELECT * 
+        FROM travel_orders 
+        WHERE id = ? AND status = 'pending_rd'";
 
 $stmt = $conn->prepare($sql);
 
@@ -142,7 +149,7 @@ if (!is_array($assistants)) {
             <?php if (!empty($order['applicant_signature'])): ?>
                 <img src="../<?php echo htmlspecialchars($order['applicant_signature']); ?>" alt="Applicant Signature">
             <?php else: ?>
-                <p>No applicant signature uploaded.</p>
+                <p>No signature uploaded.</p>
             <?php endif; ?>
         </div>
 
@@ -155,22 +162,17 @@ if (!is_array($assistants)) {
             <?php endif; ?>
         </div>
 
-        <div class="signature-box">
-            <strong>Regional Director Signature</strong><br>
-            <?php if (!empty($order['rd_signature'])): ?>
-                <img src="<?php echo htmlspecialchars($order['rd_signature']); ?>" alt="Regional Director Signature">
-            <?php else: ?>
-                <p>No Regional Director signature attached.</p>
-            <?php endif; ?>
-        </div>
-
         <form method="post" class="action-area">
+            <div class="auth-section">
+                <p>By clicking approve, your digital signature will be attached:</p>
+                <img src="<?php echo htmlspecialchars($rd_saved_signature); ?>" alt="Regional Director Signature">
+            </div>
+
             <div class="button-group">
-                <a href="index.php?tab=orders" class="btn btn-cancel">Go Back</a>
+                <a href="index.php" class="btn btn-cancel">Go Back</a>
                 <button type="submit" name="approve_btn" class="btn btn-approve">
-                    Mark as Completed
+                    Sign &amp; Final Approve
                 </button> 
-                <a class="btn btn-download-pdf" href="TO_pdf.php?id=<?php echo $order['id']; ?>">Download PDF</a>
             </div>
         </form>
     </div>
@@ -185,7 +187,7 @@ if (!is_array($assistants)) {
     function closePopup() {
         document.getElementById('popupMessage').style.display = 'none';
         document.getElementById('popupOverlay').style.display = 'none';
-        window.location.href = 'index.php?tab=orders';
+        window.location.href = 'index.php';
     }
     </script>
 

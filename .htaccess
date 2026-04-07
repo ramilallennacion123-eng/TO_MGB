@@ -1,0 +1,17 @@
+# Simple .htaccess for XAMPP Local Server
+
+# Disable directory browsing
+Options -Indexes
+
+# Enable RewriteEngine
+RewriteEngine On
+RewriteBase /TO_MGB/
+
+# Prevent access to sensitive files
+<FilesMatch "^(config\.php|composer\.json|composer\.lock)$">
+    Require all denied
+</FilesMatch>
+
+# Set default charset
+AddDefaultCharset UTF-8
+

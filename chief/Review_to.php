@@ -1,10 +1,12 @@
 <?php
 session_start();
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-
-if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch(PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['username']) || !isset($_SESSION['role'])) {
@@ -26,12 +28,9 @@ if (!isset($_GET['id']) || empty($_GET['id'])) {
 $order_id = (int) $_GET['id'];
 
 $signature_sql = "SELECT user_signature FROM users WHERE id = ?";
-$signature_stmt = mysqli_prepare($conn, $signature_sql);
-mysqli_stmt_bind_param($signature_stmt, "i", $logged_in_do_id);
-mysqli_stmt_execute($signature_stmt);
-$signature_result = mysqli_stmt_get_result($signature_stmt);
-$signature_data = mysqli_fetch_assoc($signature_result);
-mysqli_stmt_close($signature_stmt);
+$signature_stmt = $conn->prepare($signature_sql);
+$signature_stmt->execute([$logged_in_do_id]);
+$signature_data = $signature_stmt->fetch(PDO::FETCH_ASSOC);
 
 $do_saved_signature = $signature_data['user_signature'] ?? '';
 
@@ -45,23 +44,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['approve_btn'])) {
                    SET status = 'pending_rd', do_signature = ? 
                    WHERE id = ? AND officer_id = ? AND status = 'pending_do'";
 
-    $update_stmt = mysqli_prepare($conn, $update_sql);
+    $update_stmt = $conn->prepare($update_sql);
 
     if ($update_stmt) {
-        mysqli_stmt_bind_param($update_stmt, "sii", $do_saved_signature, $order_id, $logged_in_do_id);
-        mysqli_stmt_execute($update_stmt);
-
-        if (mysqli_stmt_affected_rows($update_stmt) > 0) {
-            mysqli_stmt_close($update_stmt);
+        if ($update_stmt->execute([$do_saved_signature, $order_id, $logged_in_do_id])) {
             $_SESSION['success_message'] = 'Travel Order sent successfully!';
             header("Location: division_officer.php");
             exit();
         } else {
-            mysqli_stmt_close($update_stmt);
             die("Unable to approve this travel order. It may not belong to your account, may already be processed, or officer_id does not match your login ID.");
         }
     } else {
-        die("Error updating record: " . mysqli_error($conn));
+        die("Error updating record: " . $conn->errorInfo()[2]);
     }
 }
 
@@ -69,16 +63,13 @@ $sql = "SELECT *
         FROM travel_orders 
         WHERE id = ? AND officer_id = ? AND status = 'pending_do'";
 
-$stmt = mysqli_prepare($conn, $sql);
+$stmt = $conn->prepare($sql);
 
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "ii", $order_id, $logged_in_do_id);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $order = mysqli_fetch_assoc($result);
-    mysqli_stmt_close($stmt);
+    $stmt->execute([$order_id, $logged_in_do_id]);
+    $order = $stmt->fetch(PDO::FETCH_ASSOC);
 } else {
-    die("Error fetching data: " . mysqli_error($conn));
+    die("Error fetching data: " . $conn->errorInfo()[2]);
 }
 
 if (!$order) {
@@ -95,8 +86,6 @@ if (!is_array($purposes)) {
 if (!is_array($assistants)) {
     $assistants = [];
 }
-
-mysqli_close($conn);
 ?>
 
 <!DOCTYPE html>

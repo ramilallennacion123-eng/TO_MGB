@@ -1,11 +1,5 @@
 <?php
-session_start();
-
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-
-if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
-}
+include ('connect.php');
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
@@ -72,12 +66,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 ?, ?, 'pending_do'
             )";
 
-    $stmt = mysqli_prepare($conn, $sql);
+    $stmt = $conn->prepare($sql);
 
     if ($stmt) {
-        mysqli_stmt_bind_param(
-            $stmt,
-            "sssssssssssssss",
+        if ($stmt->execute([
             $name,
             $salary,
             $position,
@@ -93,9 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $remarks,
             $officer_id,
             $signature_path
-        );
-
-        if (mysqli_stmt_execute($stmt)) {
+        ])) {
             echo '
             <!DOCTYPE html>
             <html lang="en">
@@ -171,14 +161,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </html>
             ';
         } else {
-            die("Error saving to database: " . mysqli_stmt_error($stmt));
+            die("Error saving to database: " . $stmt->errorInfo()[2]);
         }
-
-        mysqli_stmt_close($stmt);
     } else {
-        die("Error preparing statement: " . mysqli_error($conn));
+        die("Error preparing statement: " . $conn->errorInfo()[2]);
     }
-
-    mysqli_close($conn);
 }
 ?>

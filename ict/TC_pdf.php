@@ -17,12 +17,10 @@ $clearance = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$clearance) { die("Record not found."); }
 
 $name = $clearance['name'] ?? '';
-$pap_code = $clearance['pap_code'] ?? '';
 $location = $clearance['location'] ?? '';
 $travel_date = $clearance['travel_date'] ?? '';
 $purposes_array = json_decode($clearance['purpose'], true);
 
-$dateObj = new DateTime($travel_date);
 
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
@@ -77,7 +75,7 @@ $formContent = '
                <table class="inner-row">
                  <tr>
                     <td class="label-cell">PAP Code:</td>
-                    <td class="line-cell">'.$pap_code.'</td>
+                    <td class="line-cell"></td>
                  </tr>
               </table>
               </td>
@@ -112,7 +110,7 @@ $formContent .= '</ul>
             <table class ="inner-row">
             <tr>
               <td class="label-cell">Travel Date:</td>
-              <td>'.$dateObj->format('F j, Y').'</td>
+              <td>'.$travel_date.'</td>
             </tr>
             </table>
             </td>

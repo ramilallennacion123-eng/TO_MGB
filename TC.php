@@ -1,5 +1,5 @@
 <?php
-session_start();
+include ('connect.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -20,19 +20,13 @@ session_start();
 
         <form method="post" action="process_TC.php" id="travelClearanceForm" autocomplete="off">
             <div class="form-container">
-                <div class="input-group">
+                <div class="input-group full-width">
                     <label for="Name">Name of Fieldmen</label>
                     <input type="text" id="Name" name="Name" required>
                 </div>
-
-                <div class="input-group">
-                    <label for="pap_code">PAP Code</label>
-                    <input type="text" id="pap_code" name="pap_code" required>
-                </div>
-
                 <div class="input-group full-width" id="TCpurpose-container">
                     <label>Purpose of Travel</label>
-                    <input type="text" name="Purpose[]" required>
+                    <input type="text" name="Purpose[]">
                     <div class="button-group">
                         <button type="button" onclick="TCaddPurpose()">+ Add Purpose</button>
                     </div>
@@ -45,7 +39,7 @@ session_start();
 
                 <div class="input-group full-width">
                     <label for="travel_date">Travel Date</label>
-                    <input type="date" id="travel_date" name="travel_date" required>
+                    <input type="text" id="travel_date" name="travel_date" required>
                 </div>
 
                 <div class="submit-row">

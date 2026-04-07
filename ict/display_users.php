@@ -4,14 +4,17 @@ if($_SESSION['role'] !=='ict'){
   die("Access Denied!");
 }
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-if(!$conn){
-  die("Database connection failed.". mysqli_connect_error());
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch(PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
 }
 
 $sql = "SELECT * FROM users";
-$query = mysqli_query($conn, $sql);
-while ($row = mysqli_fetch_array($query)){
+$query = $conn->query($sql);
+while ($row = $query->fetch(PDO::FETCH_ASSOC)){
   $id = $row['id'];
   echo '
     <tr>
@@ -39,10 +42,10 @@ while ($row = mysqli_fetch_array($query)){
         <option value="">Select Role</option>
         <option value="ict">ICT</option>
         <option value="planner">Planner</option>
-        <option value="admin">Admin</option>
+        <option value="rd">RD</option>
         <option value="chief">Chief</option>
       </select>
-      <input type="text" name="position" id="edit_position" placeholder="Position" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
+      <input type="text" name="position" id="edit_position" placeholder="Position" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
       <input type="text" name="username" id="edit_username" placeholder="Username" required style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
       <input type="password" name="password" placeholder="New Password (leave blank to keep current)" style="width:100%; padding:10px; margin:10px 0; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
       <div style="margin-top:20px;">

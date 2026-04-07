@@ -1,47 +1,36 @@
 <?php
-session_start();
-
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-
-if (!$conn) {
-    die("Database connection failed: " . mysqli_connect_error());
-}
+include ('connect.php');    
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_tc'])) {
     $name = isset($_POST['Name']) ? trim($_POST['Name']) : '';
-    $pap_code = isset($_POST['pap_code']) ? trim($_POST['pap_code']) : '';
+
     $location = isset($_POST['location']) ? trim($_POST['location']) : '';
     $travel_date = isset($_POST['travel_date']) ? $_POST['travel_date'] : '';
     
-    $planner_query = mysqli_query($conn, "SELECT id FROM users WHERE role='planner' LIMIT 1");
-    $planner_row = mysqli_fetch_assoc($planner_query);
+    $planner_query = $conn->query("SELECT id FROM users WHERE role='planner' LIMIT 1");
+    $planner_row = $planner_query->fetch(PDO::FETCH_ASSOC);
     $planner_id = $planner_row ? $planner_row['id'] : null;
     
     $purposes_json = isset($_POST['Purpose']) ? json_encode($_POST['Purpose']) : '[]';
 
-    if (empty($name) || empty($pap_code) || empty($location) || empty($travel_date)) {
+    if (empty($name) || empty($location) || empty($travel_date)) {
         die("Please complete all required fields.");
     }
 
     $sql = "INSERT INTO travel_clearances
-            (name, pap_code, purpose, location, travel_date, planner_id, status)
-            VALUES (?, ?, ?, ?, ?, ?, 'pending_planner')";
+            (name, purpose, location, travel_date, planner_id, status)
+            VALUES (?, ?, ?, ?, ?, 'pending_planner')";
 
-    $stmt = mysqli_prepare($conn, $sql);
+    $stmt = $conn->prepare($sql);
 
     if ($stmt) {
-        mysqli_stmt_bind_param(
-            $stmt,
-            "sssssi",
+        if ($stmt->execute([
             $name,
-            $pap_code,
             $purposes_json,
             $location,
             $travel_date,
             $planner_id
-        );
-
-        if (mysqli_stmt_execute($stmt)) {
+        ])) {
             echo ' <!DOCTYPE html>
                     <html lang="en">
                     <head>
@@ -116,14 +105,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['submit_tc'])) {
                     </body>
                     </html>';
         } else {
-            die("Error saving travel clearance: " . mysqli_stmt_error($stmt));
+            die("Error saving travel clearance: " . $stmt->errorInfo()[2]);
         }
-
-        mysqli_stmt_close($stmt);
     } else {
-        die("Error preparing statement: " . mysqli_error($conn));
+        die("Error preparing statement: " . $conn->errorInfo()[2]);
     }
-
-    mysqli_close($conn);
 }
 ?>

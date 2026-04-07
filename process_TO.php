@@ -1,4 +1,5 @@
 <?php
+session_start();
 
 require_once 'vendor/autoload.php';
 use Dompdf\Dompdf;
@@ -48,12 +49,6 @@ if(isset($_POST['TO_form'])){
         break;
     case '102':
         $officer_name = "Arlene E Dayao";
-        break;
-    case '103':
-        $officer_name = "Cherry";
-        break;
-    case '104':
-        $officer_name = "Apple";
         break;
     }
 

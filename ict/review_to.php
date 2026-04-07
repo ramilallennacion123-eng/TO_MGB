@@ -2,9 +2,12 @@
 
 session_start();
 
-$conn = mysqli_connect("localhost", "root", "", "to_inventory");
-if(!$conn){
-  die("Connection failed". mysqli_connect_error());
+try {
+    $conn = new PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+} catch(PDOException $e) {
+    die("Connection failed: " . $e->getMessage());
 }
 
 if(!isset($_SESSION['user_id'])|| !isset($_SESSION['username'])|| !isset($_SESSION['role'])){
@@ -25,12 +28,9 @@ if(!isset($_GET['id'])|| empty($_GET['id'])){
 $order_id = (int)$_GET['id'];
 
 $sql = "SELECT * FROM travel_orders WHERE id = ?";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, "i", $order_id);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-$order = mysqli_fetch_assoc($result);
-mysqli_stmt_close($stmt);
+$stmt = $conn->prepare($sql);
+$stmt->execute([$order_id]);
+$order = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if(!$order){
   die("Travel Order not found.");
@@ -42,36 +42,29 @@ $officer_id = $order['officer_id'];
 $do_signature = '';
 if(!empty($officer_id)){
   $do_sql = "SELECT user_signature FROM users WHERE id = ?";
-  $do_stmt = mysqli_prepare($conn, $do_sql);
-  mysqli_stmt_bind_param($do_stmt, "i", $officer_id);
-  mysqli_stmt_execute($do_stmt);
-  $do_result = mysqli_stmt_get_result($do_stmt);
-  $do_data = mysqli_fetch_assoc($do_result);
+  $do_stmt = $conn->prepare($do_sql);
+  $do_stmt->execute([$officer_id]);
+  $do_data = $do_stmt->fetch(PDO::FETCH_ASSOC);
   if($do_data){
     $do_signature = $do_data['user_signature'];
   }
-  mysqli_stmt_close($do_stmt);
 }
 $rd_signature = '';
-$rd_sql = "SELECT user_signature FROM users WHERE role = 'admin' LIMIT 1";
-$rd_stmt = mysqli_prepare($conn, $rd_sql);
-mysqli_stmt_execute($rd_stmt);
-$rd_result = mysqli_stmt_get_result($rd_stmt);
-$rd_data = mysqli_fetch_assoc($rd_result);
+$rd_sql = "SELECT user_signature FROM users WHERE role = 'rd' LIMIT 1";
+$rd_stmt = $conn->prepare($rd_sql);
+$rd_stmt->execute();
+$rd_data = $rd_stmt->fetch(PDO::FETCH_ASSOC);
 if($rd_data){
   $rd_signature = $rd_data['user_signature'];
 }
-mysqli_stmt_close($rd_stmt);
 
 if($_SERVER["REQUEST_METHOD"] == "POST"){
   
   if($current_status == 'approved' && isset($_POST['complete_btn'])){
     $update_sql = "UPDATE travel_orders SET status = 'completed' WHERE id = ? AND status = 'approved'";
-    $update_stmt = mysqli_prepare($conn, $update_sql);
-    mysqli_stmt_bind_param($update_stmt, "i", $order_id);
+    $update_stmt = $conn->prepare($update_sql);
     
-    if(mysqli_stmt_execute($update_stmt)){
-      mysqli_stmt_close($update_stmt);
+    if($update_stmt->execute([$order_id])){
       $_SESSION['success_message'] = 'Travel Order completed successfully!';
       header("location: index.php?tab=orders");
       exit();
@@ -79,11 +72,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
   } elseif($current_status == 'pending_rd' && isset($_POST['approve_btn'])){
     $update_sql = "UPDATE travel_orders SET status = 'approved', rd_signature = ? WHERE id = ? AND status = 'pending_rd'";
-    $update_stmt = mysqli_prepare($conn, $update_sql);
-    mysqli_stmt_bind_param($update_stmt, "si", $rd_signature, $order_id);
+    $update_stmt = $conn->prepare($update_sql);
     
-    if(mysqli_stmt_execute($update_stmt)){
-      mysqli_stmt_close($update_stmt);
+    if($update_stmt->execute([$rd_signature, $order_id])){
       $_SESSION['success_message'] = 'Travel Order approved successfully!';
       header("location: index.php?tab=orders");
       exit();
@@ -91,11 +82,9 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
   } elseif($current_status == 'pending_do' && isset($_POST['approve_btn'])){
     $update_sql = "UPDATE travel_orders SET status = 'pending_rd', do_signature = ? WHERE id = ? AND status = 'pending_do'";
-    $update_stmt = mysqli_prepare($conn, $update_sql);
-    mysqli_stmt_bind_param($update_stmt, "si", $do_signature, $order_id);
+    $update_stmt = $conn->prepare($update_sql);
     
-    if(mysqli_stmt_execute($update_stmt)){
-      mysqli_stmt_close($update_stmt);
+    if($update_stmt->execute([$do_signature, $order_id])){
       $_SESSION['success_message'] = 'Travel Order forwarded to RD successfully!';
       header("location: index.php?tab=orders");
       exit();
@@ -103,22 +92,18 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
   } elseif(isset($_POST['attach_btn'])){
       if($current_status == 'pending_do'){
         $update_sql = "UPDATE travel_orders SET status = 'approved', rd_signature = ?, do_signature = ? WHERE id = ? AND status = 'pending_do'";
-        $update_stmt = mysqli_prepare($conn, $update_sql);
-        mysqli_stmt_bind_param($update_stmt, "ssi", $rd_signature, $do_signature, $order_id);
+        $update_stmt = $conn->prepare($update_sql);
 
-        if(mysqli_stmt_execute($update_stmt)){
-          mysqli_stmt_close($update_stmt);
+        if($update_stmt->execute([$rd_signature, $do_signature, $order_id])){
           $_SESSION['success_message'] = 'Travel Order approved and forwarded to Planner successfully';
           header("location: index.php?tab=orders");
           exit();
         }
       }elseif($current_status == 'pending_rd'){
         $update_sql = "UPDATE travel_orders SET status = 'approved', rd_signature = ? WHERE id = ? AND status = 'pending_rd'";
-        $update_stmt = mysqli_prepare($conn, $update_sql);
-        mysqli_stmt_bind_param($update_stmt, "si", $rd_signature, $order_id);
+        $update_stmt = $conn->prepare($update_sql);
 
-        if(mysqli_stmt_execute($update_stmt)){
-          mysqli_stmt_close($update_stmt);
+        if($update_stmt->execute([$rd_signature, $order_id])){
           $_SESSION['success_message'] = 'Travel Order approved and forwarded to Planner successfully';
           header("location: index.php?tab=orders");
           exit();
@@ -137,8 +122,6 @@ if(!is_array($purposes)){
 if(!is_array($assistants)){
   $assistants = [];
 }
-
-mysqli_close($conn);
 
 ?>
 
@@ -246,7 +229,7 @@ mysqli_close($conn);
           </div>
         </div>
       <?php endif; ?>
-      <a href="TO_pdf.php?id=<?php echo $order['id']; ?>" class="btn">Download PDF</a>
+      <a class="btn btn-download-pdf" href="TO_pdf.php?id=<?php echo $order['id']; ?>">Download PDF</a>
       <button type="button" class="btn btn-back" onclick="window.location.href='index.php'">Back to Dashboard</button>
     </form>
   </div>

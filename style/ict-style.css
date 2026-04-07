@@ -67,12 +67,10 @@
   background-color:#4CAF50;
   color:white;
   border:none;
-  padding:10px 20px;
+  padding:12px 20px;
   cursor:pointer;
-  margin-bottom:20px;
   border-radius:4px;
   float: right;
-
 }
 .btn-create:hover{
   background-color:#45a049;
@@ -126,10 +124,6 @@
 a{
     text-decoration: none;
     color: white;
-}
-.search-container{
-  position: relative;
-  left: 370px;
 }
 
 .search-bar{
