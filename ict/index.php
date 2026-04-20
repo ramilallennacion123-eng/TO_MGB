@@ -1,10 +1,10 @@
 <?php
 
 session_start();
-if($_SESSION['role'] !=='ict')
-  {
-    die("access denied!");
-  }
+if(!isset($_SESSION['role']) || $_SESSION['role'] !== 'ict'){
+  header("Location: ../login.php");
+  exit();
+}
 
 $logged_in_ict_id =$_SESSION['user_id'];
 $username =$_SESSION['username'];

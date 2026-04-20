@@ -95,7 +95,6 @@ if (!is_array($assistants)) {
             <div class="detail-item"><strong>Position</strong> <?php echo htmlspecialchars($order['position']); ?></div>
             <div class="detail-item"><strong>Division/Unit</strong> <?php echo htmlspecialchars($order['division_unit']); ?></div>
             <div class="detail-item"><strong>Salary</strong> <?php echo htmlspecialchars($order['salary']); ?></div>
-
             <div class="detail-item"><strong>Official Station</strong> <?php echo htmlspecialchars($order['official_station']); ?></div>
             <div class="detail-item"><strong>Destination</strong> <?php echo htmlspecialchars($order['destination']); ?></div>
             <div class="detail-item"><strong>Departure Date</strong> <?php echo htmlspecialchars($order['departure_date']); ?></div>
@@ -133,7 +132,6 @@ if (!is_array($assistants)) {
 
             <div class="detail-item"><strong>Per Diems/Expenses</strong> <?php echo htmlspecialchars($order['per_diems']); ?></div>
             <div class="detail-item"><strong>Appropriation</strong> <?php echo htmlspecialchars($order['appropriation']); ?></div>
-
             <div class="detail-item full-width"><strong>Remarks</strong> <?php echo htmlspecialchars($order['remarks']); ?></div>
         </div>
 
@@ -169,8 +167,7 @@ if (!is_array($assistants)) {
                 <a href="index.php?tab=orders" class="btn btn-cancel">Go Back</a>
                 <button type="submit" name="approve_btn" class="btn btn-approve">
                     Mark as Completed
-                </button> 
-                <a class="btn btn-download-pdf" href="TO_pdf.php?id=<?php echo $order['id']; ?>">Download PDF</a>
+                </button>
             </div>
         </form>
     </div>

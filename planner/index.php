@@ -7,7 +7,8 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['username']) || !isset($_SE
 }
 
 if ($_SESSION['role'] !== 'planner') {
-    die("Access denied.");
+    header("Location: ../login.php");
+    exit();
 }
 
 $logged_in_planner_id = $_SESSION['user_id'];

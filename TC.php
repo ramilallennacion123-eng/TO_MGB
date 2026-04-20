@@ -12,7 +12,7 @@ include ('connect.php');
 <body>
     <div class="box">
         <div class="top-buttons">
-            <a href="../TO_MGB/TO.php" class="nav-btn">Previous</a>
+            <a href="../TO_MGB/TO.php" class="nav-btn">Travel Order</a>
             <a href="./index.php" class="nav-btn">Home</a>
         </div>
 
