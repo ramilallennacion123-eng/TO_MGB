@@ -57,6 +57,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['approve_btn'])) {
     }
 }
 
+if($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reject_btn'])) {
+    $rejection_remarks = trim($_POST['rejection_remarks'] ?? '');
+    
+    if (empty($rejection_remarks)) {
+        die("Rejection remarks are required.");
+    }
+
+    $update_sql = "UPDATE travel_orders 
+                   SET status = 'rejected_do', rejection_remarks = ? 
+                   WHERE id = ? AND officer_id = ? AND status = 'pending_do'";
+
+    $update_stmt = $conn->prepare($update_sql);
+
+    if ($update_stmt) {
+        if ($update_stmt->execute([$rejection_remarks, $order_id, $logged_in_do_id])) {
+            $_SESSION['success_message'] = 'Travel Order rejected.';
+            header("Location: division_officer.php");
+            exit();
+        } else {
+            die("Unable to reject this travel order. It may not belong to your account, may already be processed, or officer_id does not match your login ID.");
+        }
+    } else {
+        die("Error updating record: " . $conn->errorInfo()[2]);
+    }
+}
 $sql = "SELECT * 
         FROM travel_orders 
         WHERE id = ? AND officer_id = ? AND status = 'pending_do'";
@@ -97,6 +122,7 @@ if (!is_array($assistants)) {
 <body>
 
     <div class="box">
+        <a href="division_officer.php" class="btn btn-cancel">Go Back</a>
         <h1>Review Travel Order</h1>
 
         <div class="detail-grid">
@@ -160,12 +186,28 @@ if (!is_array($assistants)) {
             </div>
 
             <div class="button-group">
-                <a href="division_officer.php" class="btn btn-cancel">Go Back</a>
                 <button type="submit" name="approve_btn" class="btn btn-approve">
                     Sign, Approve &amp; Forward to Regional Director
                 </button>
+                <button type="button" onclick="showRejectModal()" class="btn btn-reject">
+                    Reject
+                </button>
             </div>
         </form>
+    </div>
+
+    <div class="modal-overlay" id="rejectModal">
+        <div class="modal-content">
+            <h2>Reject Travel Order</h2>
+            <form method="post">
+                <label for="rejection_remarks">Please provide remarks for rejection:</label>
+                <textarea name="rejection_remarks" id="rejection_remarks" rows="4" required></textarea>
+                <div class="modal-buttons">
+                    <button type="submit" name="reject_btn" class="btn btn-reject">Confirm Reject</button>
+                    <button type="button" onclick="hideRejectModal()" class="btn btn-cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="popup-overlay" id="popupOverlay"></div>
@@ -179,6 +221,14 @@ if (!is_array($assistants)) {
         document.getElementById('popupMessage').style.display = 'none';
         document.getElementById('popupOverlay').style.display = 'none';
         window.location.href = 'division_officer.php';
+    }
+    
+    function showRejectModal() {
+        document.getElementById('rejectModal').style.display = 'flex';
+    }
+    
+    function hideRejectModal() {
+        document.getElementById('rejectModal').style.display = 'none';
     }
     </script>
 

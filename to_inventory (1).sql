@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 16, 2026 at 08:03 AM
+-- Generation Time: Apr 21, 2026 at 01:41 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -44,7 +44,8 @@ CREATE TABLE `travel_clearances` (
 
 INSERT INTO `travel_clearances` (`id`, `name`, `purpose`, `location`, `travel_date`, `planner_id`, `status`, `created_at`) VALUES
 (6, 'Ramil Allen Nacion', '[\"ANTIFRAGILE\"]', 'SSSSSSSSS', 'December 12-13, 2026', 201, 'pending_planner', '2026-04-07 03:03:01'),
-(7, 'Aries M. Bado', '[\"To attend FY 2027 Budget Proposal\"]', 'NCR', 'April 9-10, 2026', 201, 'approved_planner', '2026-04-08 00:25:47');
+(7, 'Aries M. Bado', '[\"To attend FY 2027 Budget Proposal\"]', 'NCR', 'April 9-10, 2026', 201, 'approved_planner', '2026-04-08 00:25:47'),
+(8, 'Ramil Allen Nacion', '[\"For the General Meeting\"]', 'Daraga, Albay', 'April 18 - April 20, 2026', 201, 'pending_planner', '2026-04-20 12:06:40');
 
 -- --------------------------------------------------------
 
@@ -69,7 +70,7 @@ CREATE TABLE `travel_orders` (
   `remarks` text DEFAULT NULL,
   `officer_id` int(11) NOT NULL,
   `applicant_signature` varchar(255) NOT NULL,
-  `status` enum('pending_do','pending_rd','approved','rejected','completed') DEFAULT 'pending_do',
+  `status` enum('pending_do','pending_rd','approved','rejected_do','rejected_rd','completed') DEFAULT 'pending_do',
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `do_signature` varchar(255) DEFAULT NULL,
   `rd_signature` varchar(255) DEFAULT NULL,
@@ -78,19 +79,25 @@ CREATE TABLE `travel_orders` (
   `do_sig_x` int(11) DEFAULT 50,
   `do_sig_y` int(11) DEFAULT 320,
   `rd_sig_x` int(11) DEFAULT 480,
-  `rd_sig_y` int(11) DEFAULT 320
+  `rd_sig_y` int(11) DEFAULT 320,
+  `rejection_remarks` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `travel_orders`
 --
 
-INSERT INTO `travel_orders` (`id`, `name`, `salary`, `position`, `division_unit`, `departure_date`, `official_station`, `destination`, `arrival_date`, `purpose`, `per_diems`, `assistants`, `appropriation`, `remarks`, `officer_id`, `applicant_signature`, `status`, `created_at`, `do_signature`, `rd_signature`, `applicant_sig_x`, `applicant_sig_y`, `do_sig_x`, `do_sig_y`, `rd_sig_x`, `rd_sig_y`) VALUES
-(15, 'Aries M. Bado', '', 'Senior I.T. Support Specialist', 'ORD', '2026-04-09', 'MGB', 'NCR', '2026-04-10', '[\"To attend MGB FY 2027 Budget Proposal\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69d5a0d0377fc8.60318104.png', 'completed', '2026-04-08 00:26:56', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 234, 759, -20, 571, 333, 565),
-(16, 'marvin bobby sodsod', '', 'Science Research Specialist II', '', '2026-04-08', 'CENRO Iriga', 'Baao, Camarines Sur', '2026-04-10', '[\"To conduct investigation on the complaint against the anjinator construction And supply corp. in Brgy. Agdangan, Baao, Camarines Sur\",\"to conduct research and interview at DAR Baoo office regarding the lot Status reg the quarry site of ACSC\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69d5b693060ae9.15034865.png', 'completed', '2026-04-08 01:59:47', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 182, 822, -8, 638, 340, 642),
-(19, 'Ramil Allen Nacion', '', '', '', '0000-00-00', '', '', '0000-00-00', '[\"\"]', '', '[\"\"]', '', '', 102, 'uploads/signatures/sig_69dc4e8d8c9bb2.48122723.png', 'approved', '2026-04-13 02:01:49', '../uploads/signatures/chief_102.png', '../uploads/signatures/rd_106.png', 262, 743, -33, 578, 345, 577),
-(20, 'lklkjopklmklmkmj', '', '', '', '0000-00-00', '', '', '0000-00-00', '[\"\"]', '', '[\"\"]', '', '', 205, 'uploads/signatures/sig_69dc939b596a10.31711003.png', 'approved', '2026-04-13 06:56:27', '../uploads/signatures/chief_205.png', '../uploads/signatures/rd_106.png', 243, 782, -70, 571, 355, 578),
-(21, 'Celerino Calmada', '', '', '', '2026-04-17', '', '', '2026-04-19', '[\"\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e02d4a01ae49.54922341.png', 'completed', '2026-04-16 00:28:58', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 184, 777, -9, 567, 335, 575);
+INSERT INTO `travel_orders` (`id`, `name`, `salary`, `position`, `division_unit`, `departure_date`, `official_station`, `destination`, `arrival_date`, `purpose`, `per_diems`, `assistants`, `appropriation`, `remarks`, `officer_id`, `applicant_signature`, `status`, `created_at`, `do_signature`, `rd_signature`, `applicant_sig_x`, `applicant_sig_y`, `do_sig_x`, `do_sig_y`, `rd_sig_x`, `rd_sig_y`, `rejection_remarks`) VALUES
+(15, 'Aries M. Bado', '', 'Senior I.T. Support Specialist', 'ORD', '2026-04-09', 'MGB', 'NCR', '2026-04-10', '[\"To attend MGB FY 2027 Budget Proposal\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69d5a0d0377fc8.60318104.png', 'completed', '2026-04-08 00:26:56', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 226, 750, -20, 571, 342, 572, NULL),
+(16, 'marvin bobby sodsod', '', 'Science Research Specialist II', '', '2026-04-08', 'CENRO Iriga', 'Baao, Camarines Sur', '2026-04-10', '[\"To conduct investigation on the complaint against the anjinator construction And supply corp. in Brgy. Agdangan, Baao, Camarines Sur\",\"to conduct research and interview at DAR Baoo office regarding the lot Status reg the quarry site of ACSC\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69d5b693060ae9.15034865.png', 'completed', '2026-04-08 01:59:47', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 182, 822, -8, 638, 340, 642, NULL),
+(21, 'Celerino Calmada', '', '', '', '2026-04-17', '', '', '2026-04-19', '[\"\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e02d4a01ae49.54922341.png', 'completed', '2026-04-16 00:28:58', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 183, 771, -9, 567, 335, 575, NULL),
+(22, 'Ramil Allen Nacion', '', '', '', '0000-00-00', '', '', '0000-00-00', '[\"\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e085a642b2c6.91005196.png', 'completed', '2026-04-16 06:45:58', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 207, 757, -12, 574, 334, 574, NULL),
+(23, 'Naoi Rei', '', 'Main Rapper', 'IVE', '2026-04-21', '', 'Seoul-tan kudarat', '2026-04-21', '[\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut sit amet euismod lacus, ac feugiat lectus. Vivamus pharetra suscipit tincidunt. Cras ut fermentum ex, sed facilisis lacus. Duis purus elit, cursus sed ante quis, sodales porttitor mi.\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e5689a659238.39963529.png', 'completed', '2026-04-19 23:43:22', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 238, 778, -14, 611, 329, 609, NULL),
+(24, 'Ramil Allen Nacion', '', 'OJT', 'ORD', '2026-04-20', 'Legazpi', 'Daraga', '2026-04-21', '[\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut sit amet euismod lacus, ac feugiat lectus. Vivamus pharetra suscipit tincidunt. \"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e5f41ceb8444.54624514.png', 'pending_do', '2026-04-20 09:38:36', NULL, NULL, 350, 480, 50, 320, 480, 320, NULL),
+(25, 'Celerino Calmada', '', 'OJT', 'ORD', '2026-04-21', 'Washington', 'Legazpi', '2026-04-22', '[\"To conduct investigation on the complaint against the anjinator construction And supply corp. in Brgy. Agdangan, Baao, Camarines Sur\",\"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut sit amet euismod lacus, ac feugiat lectus. \"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e5f469129719.56669624.png', 'approved', '2026-04-20 09:39:53', '../uploads/signatures/chief_101.png', '../uploads/signatures/rd_106.png', 350, 480, 50, 320, 480, 320, NULL),
+(26, 'Kenneth Palmiano', '', '', '', '0000-00-00', '', '', '0000-00-00', '[\"\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e5f961267402.09226845.png', 'rejected_rd', '2026-04-20 10:01:05', '../uploads/signatures/chief_101.png', NULL, 350, 480, 50, 320, 480, 320, NULL),
+(29, 'Life Advincula', '', '', '', '0000-00-00', '', '', '0000-00-00', '[\"\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e6158d0dbca9.20941821.png', 'rejected_do', '2026-04-20 12:01:17', NULL, NULL, 350, 480, 50, 320, 480, 320, NULL),
+(30, 'Ramil Allen Nacion', '', '', '', '0000-00-00', '', '', '0000-00-00', '[\"\"]', '', '[\"\"]', '', '', 101, 'uploads/signatures/sig_69e6208de11f26.40727476.png', 'rejected_do', '2026-04-20 12:48:13', NULL, NULL, 350, 480, 50, 320, 480, 320, 'just because');
 
 -- --------------------------------------------------------
 
@@ -120,8 +127,7 @@ INSERT INTO `users` (`id`, `username`, `name`, `password`, `role`, `position`, `
 (106, 'rd', 'Guillermo A. Molina Jr. IV', '$2y$10$ahe1qLZ9I2awFtLOLEd.OOGczqXZ3y9at6T8Yq05M66Ns1PQ8Gxh.', 'rd', 'Regional Director', '../uploads/signatures/rd_106.png'),
 (201, 'josie', 'Josie Jacob', '$2y$10$nbObkMm8A8pNFTRoMzSiVehFfkJBIKWKX/V81ZvuzzYW07tfggY9.', 'planner', '', NULL),
 (203, 'Rei', 'Naoi Rei', '$2y$10$lWKSvi682xxql0DTBUETOONx/TlO4q/Fdt1Fj70vJ4hmI53Q4s0i.', 'ict', 'Rapper', NULL),
-(204, 'aries', 'aries', '$2y$10$T7hmq/9TYvujYOr.EB3cLOwt5eNef9ZVndAyvVeVCUAXF7i9cM/EK', 'ict', NULL, NULL),
-(205, 'mina', 'Myoi Mina', '$2y$10$jPUMLztoTLtskvAxeOQIcuY/oilBI5qL1znby1nm5MXlZMBytbxlm', 'chief', 'Chief Chief Chief', '../uploads/signatures/chief_205.png');
+(204, 'aries', 'aries', '$2y$10$T7hmq/9TYvujYOr.EB3cLOwt5eNef9ZVndAyvVeVCUAXF7i9cM/EK', 'ict', NULL, NULL);
 
 --
 -- Indexes for dumped tables
@@ -154,13 +160,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `travel_clearances`
 --
 ALTER TABLE `travel_clearances`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `travel_orders`
 --
 ALTER TABLE `travel_orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- AUTO_INCREMENT for table `users`

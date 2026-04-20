@@ -184,6 +184,15 @@ if(!is_array($assistants)){
             <div class="detail-item full-width"><strong>Remarks</strong> <?php echo htmlspecialchars($order['remarks']); ?></div>
         </div>
 
+        <?php if (!empty($order['rejection_remarks']) && in_array($current_status, ['rejected_do', 'rejected_rd'])): ?>
+        <div class="detail-grid" style="margin-top: 20px;">
+            <div class="detail-item full-width" style="background: #ffe6e6; border-color: #ff4444;">
+                <strong style="color: #cc0000;">Rejection Remarks</strong>
+                <?php echo nl2br(htmlspecialchars($order['rejection_remarks'])); ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <div class="signature-box">
             <strong>Applicant E-Signature</strong><br>
             <?php if (!empty($order['applicant_signature'])): ?>
@@ -223,7 +232,7 @@ if(!is_array($assistants)){
         <a class="btn btn-download-pdf" href="adjust_signatures_to.php?id=<?php echo $order['id']; ?>">Adjust Signatures & Download PDF</a>
       <?php elseif($current_status == 'completed'): ?>
         <div class="modal-overlay" id="completedModal">
-          <div class="modal-content">
+          <div class="modal-content-completed">
             <p><strong>This travel order has been completed.</strong></p>
             <button class="closeBtn" type="button" id="closeBtn">Ok</button>
           </div>

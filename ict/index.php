@@ -33,16 +33,18 @@ if(isset($_SESSION['success_message'])) {
 
 
 $travel_orders = [];
-if ($tab === 'all' || $tab === 'orders' || $tab === 'completed') {
+if ($tab === 'all' || $tab === 'orders' || $tab === 'completed' || $tab === 'rejected') {
     $sql_orders = "SELECT id, name, position, destination, departure_date, created_at, status
                    FROM travel_orders WHERE 1=1";
     
     $params = [];
     
     if ($tab === 'all' || $tab === 'orders') {
-        $sql_orders .= " AND status != 'completed'";
+        $sql_orders .= " AND status NOT IN ('completed', 'rejected_do', 'rejected_rd')";
     } elseif ($tab === 'completed') {
         $sql_orders .= " AND status = 'completed'";
+    } elseif ($tab === 'rejected') {
+        $sql_orders .= " AND status IN ('rejected_do', 'rejected_rd')";
     }
     
     if (!empty($search)) {
@@ -124,13 +126,17 @@ $total_items = count($travel_orders) + count($travel_clearances);
 /* COUNT PENDING APPROVALS */
 $pending_orders_count = 0;
 $pending_clearances_count = 0;
+$rejected_orders_count = 0;
 
 if (empty($search)) {
-    $stmt_pending_orders = $pdo->query("SELECT COUNT(*) FROM travel_orders WHERE status != 'completed'");
+    $stmt_pending_orders = $pdo->query("SELECT COUNT(*) FROM travel_orders WHERE status NOT IN ('completed', 'rejected_do', 'rejected_rd')");
     $pending_orders_count = $stmt_pending_orders->fetchColumn();
     
     $stmt_pending_clearances = $pdo->query("SELECT COUNT(*) FROM travel_clearances WHERE status = 'pending_planner'");
     $pending_clearances_count = $stmt_pending_clearances->fetchColumn();
+    
+    $stmt_rejected_orders = $pdo->query("SELECT COUNT(*) FROM travel_orders WHERE status IN ('rejected_do', 'rejected_rd')");
+    $rejected_orders_count = $stmt_rejected_orders->fetchColumn();
 }
 
 
@@ -202,6 +208,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                     <span class="notification-badge"><?php echo $pending_clearances_count; ?></span>
                 <?php endif; ?>
             </a>
+            <a href="index.php?tab=rejected" class="tab-link <?php echo ($tab === 'rejected') ? 'active' : ''; ?>">
+                Rejected
+                <?php if ($rejected_orders_count > 0 && empty($search)): ?>
+                    <span class="notification-badge"><?php echo $rejected_orders_count; ?></span>
+                <?php endif; ?>
+            </a>
             <a href="index.php?tab=completed" class="tab-link <?php echo ($tab === 'completed') ? 'active' : ''; ?>">Completed</a>
             <div class="search-container">
             <form method="GET" action="" style="display: flex; gap: 10px; align-items: center;">
@@ -222,8 +234,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
             </form>
         </div>
         </div>
-         <p>You have <strong><?php echo $total_items; ?></strong> items<?php echo ($tab === 'completed') ? '' : ' to review'; ?>.<?php if (!empty($search)): ?> <span style="color: #666;">(Filtered by: "<?php echo htmlspecialchars($search); ?>")</span><?php endif; ?></p>
-        <?php if ($tab === 'all' || $tab === 'orders' || $tab === 'completed'): ?>
+         <p>You have <strong><?php echo $total_items; ?></strong> items<?php echo ($tab === 'completed' || $tab === 'rejected') ? '' : ' to review'; ?>.<?php if (!empty($search)): ?> <span style="color: #666;">(Filtered by: "<?php echo htmlspecialchars($search); ?>")</span><?php endif; ?></p>
+        <?php if ($tab === 'all' || $tab === 'orders' || $tab === 'completed' || $tab === 'rejected'): ?>
             <?php if ($tab !== 'clearances'): ?>
             <div class="section-title">Travel Orders</div>
 
@@ -257,6 +269,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                                     break;
                                 default:
                                     $status_change = 'Unknown Status';
+                                case 'rejected_rd':
+                                    $status_change = 'Travel Order Rejected by Regional Director';
+                                    break;
+                                case 'rejected_do':
+                                    $status_change = 'Travel Order Rejected by Division Chief';
+                                    break;
                             }
                         ?>
                             <tr>
@@ -285,6 +303,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                 <div class="empty-state">
                     <h3>No completed travel orders found.</h3>
                     <p>There are no completed travel orders for the selected period.</p>
+                </div>
+            <?php elseif ($tab === 'rejected' && count($travel_orders) === 0): ?>
+                <div class="empty-state">
+                    <h3>No rejected travel orders found.</h3>
+                    <p>There are no rejected travel orders.</p>
                 </div>
             <?php endif; ?>
             <?php endif; ?>
