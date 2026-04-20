@@ -11,6 +11,7 @@ $username =$_SESSION['username'];
 
 $tab = isset($_GET['tab']) ? $_GET['tab'] : 'all';
 $search = isset($_GET['search']) ? trim($_GET['search']) : '';
+$date_filter = isset($_GET['date_filter']) ? $_GET['date_filter'] : 'all';
 try{
   $pdo = NEW PDO("mysql:host=localhost;dbname=to_inventory", "root", "");
   $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -32,20 +33,42 @@ if(isset($_SESSION['success_message'])) {
 
 
 $travel_orders = [];
-if ($tab === 'all' || $tab === 'orders') {
+if ($tab === 'all' || $tab === 'orders' || $tab === 'completed') {
     $sql_orders = "SELECT id, name, position, destination, departure_date, created_at, status
-                   FROM travel_orders";
+                   FROM travel_orders WHERE 1=1";
+    
+    $params = [];
+    
+    if ($tab === 'all' || $tab === 'orders') {
+        $sql_orders .= " AND status != 'completed'";
+    } elseif ($tab === 'completed') {
+        $sql_orders .= " AND status = 'completed'";
+    }
     
     if (!empty($search)) {
-        $sql_orders .= " WHERE name LIKE ?";
+        $sql_orders .= " AND name LIKE ?";
+        $params[] = '%' . $search . '%';
+    }
+    
+    if ($date_filter !== 'all' && $tab === 'completed') {
+        switch($date_filter) {
+            case '7days':
+                $sql_orders .= " AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+                break;
+            case '30days':
+                $sql_orders .= " AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                break;
+            case 'this_month':
+                $sql_orders .= " AND MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())";
+                break;
+        }
     }
     
     $sql_orders .= " ORDER BY created_at DESC";
     $stmt_orders = $pdo->prepare($sql_orders);
     
-    if (!empty($search)) {
-        $search_param = '%' . $search . '%';
-        $stmt_orders->bindParam(1, $search_param, PDO::PARAM_STR);
+    foreach ($params as $i => $param) {
+        $stmt_orders->bindValue($i + 1, $param, PDO::PARAM_STR);
     }
     
     $stmt_orders->execute();
@@ -54,20 +77,42 @@ if ($tab === 'all' || $tab === 'orders') {
 
 /* FETCH TRAVEL CLEARANCES */
 $travel_clearances = [];
-if ($tab === 'all' || $tab === 'clearances') {
+if ($tab === 'all' || $tab === 'clearances' || $tab === 'completed') {
     $sql_clearances = "SELECT id, name, location, travel_date, created_at, status
-                       FROM travel_clearances";
+                       FROM travel_clearances WHERE 1=1";
+    
+    $params_tc = [];
+    
+    if ($tab === 'all' || $tab === 'clearances') {
+        $sql_clearances .= " AND status = 'pending_planner'";
+    } elseif ($tab === 'completed') {
+        $sql_clearances .= " AND status = 'approved_planner'";
+    }
     
     if (!empty($search)) {
-        $sql_clearances .= " WHERE name LIKE ?";
+        $sql_clearances .= " AND name LIKE ?";
+        $params_tc[] = '%' . $search . '%';
+    }
+    
+    if ($date_filter !== 'all' && $tab === 'completed') {
+        switch($date_filter) {
+            case '7days':
+                $sql_clearances .= " AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+                break;
+            case '30days':
+                $sql_clearances .= " AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+                break;
+            case 'this_month':
+                $sql_clearances .= " AND MONTH(created_at) = MONTH(NOW()) AND YEAR(created_at) = YEAR(NOW())";
+                break;
+        }
     }
     
     $sql_clearances .= " ORDER BY created_at DESC";
     $stmt_clearances = $pdo->prepare($sql_clearances);
     
-    if (!empty($search)) {
-        $search_param = '%' . $search . '%';
-        $stmt_clearances->bindParam(1, $search_param, PDO::PARAM_STR);
+    foreach ($params_tc as $i => $param) {
+        $stmt_clearances->bindValue($i + 1, $param, PDO::PARAM_STR);
     }
     
     $stmt_clearances->execute();
@@ -75,6 +120,18 @@ if ($tab === 'all' || $tab === 'clearances') {
 }
 
 $total_items = count($travel_orders) + count($travel_clearances);
+
+/* COUNT PENDING APPROVALS */
+$pending_orders_count = 0;
+$pending_clearances_count = 0;
+
+if (empty($search)) {
+    $stmt_pending_orders = $pdo->query("SELECT COUNT(*) FROM travel_orders WHERE status != 'completed'");
+    $pending_orders_count = $stmt_pending_orders->fetchColumn();
+    
+    $stmt_pending_clearances = $pdo->query("SELECT COUNT(*) FROM travel_clearances WHERE status = 'pending_planner'");
+    $pending_clearances_count = $stmt_pending_clearances->fetchColumn();
+}
 
 
 /* DELETE TRAVEL CLEARANCE */
@@ -133,21 +190,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
  <div class="dashboard-container">
         <div class="tabs">
             <a href="index.php?tab=all" class="tab-link <?php echo ($tab === 'all') ? 'active' : ''; ?>">All</a>
-            <a href="index.php?tab=orders" class="tab-link <?php echo ($tab === 'orders') ? 'active' : ''; ?>">Travel Orders</a>
-            <a href="index.php?tab=clearances" class="tab-link <?php echo ($tab === 'clearances') ? 'active' : ''; ?>">Travel Clearance</a>
+            <a href="index.php?tab=orders" class="tab-link <?php echo ($tab === 'orders') ? 'active' : ''; ?>">
+                Travel Orders
+                <?php if ($pending_orders_count > 0 && empty($search)): ?>
+                    <span class="notification-badge"><?php echo $pending_orders_count; ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="index.php?tab=clearances" class="tab-link <?php echo ($tab === 'clearances') ? 'active' : ''; ?>">
+                Travel Clearance
+                <?php if ($pending_clearances_count > 0 && empty($search)): ?>
+                    <span class="notification-badge"><?php echo $pending_clearances_count; ?></span>
+                <?php endif; ?>
+            </a>
+            <a href="index.php?tab=completed" class="tab-link <?php echo ($tab === 'completed') ? 'active' : ''; ?>">Completed</a>
             <div class="search-container">
             <form method="GET" action="" style="display: flex; gap: 10px; align-items: center;">
                 <input type="hidden" name="tab" value="<?php echo htmlspecialchars($tab); ?>">
+                <?php if ($tab === 'completed'): ?>
+                    <select name="date_filter" class="date-filter" onchange="this.form.submit()">
+                        <option value="all" <?php echo ($date_filter === 'all') ? 'selected' : ''; ?>>All Time</option>
+                        <option value="7days" <?php echo ($date_filter === '7days') ? 'selected' : ''; ?>>Last 7 Days</option>
+                        <option value="30days" <?php echo ($date_filter === '30days') ? 'selected' : ''; ?>>Last 30 Days</option>
+                        <option value="this_month" <?php echo ($date_filter === 'this_month') ? 'selected' : ''; ?>>This Month</option>
+                    </select>
+                <?php endif; ?>
                 <input class ="search-bar" type="text" name="search" placeholder="Search by applicant name..." value="<?php echo htmlspecialchars($search); ?>">
                 <button class="submit-search" type="submit">Search</button>
-                <?php if (!empty($search)): ?>
+                <?php if (!empty($search) || ($tab === 'completed' && $date_filter !== 'all')): ?>
                     <a class="clear-search" href="?tab=<?php echo $tab; ?>">Clear</a>
                 <?php endif; ?>
             </form>
         </div>
         </div>
-         <p>You have <strong><?php echo $total_items; ?></strong> items to review.<?php if (!empty($search)): ?> <span style="color: #666;">(Filtered by: "<?php echo htmlspecialchars($search); ?>")</span><?php endif; ?></p>
-        <?php if ($tab === 'all' || $tab === 'orders'): ?>
+         <p>You have <strong><?php echo $total_items; ?></strong> items<?php echo ($tab === 'completed') ? '' : ' to review'; ?>.<?php if (!empty($search)): ?> <span style="color: #666;">(Filtered by: "<?php echo htmlspecialchars($search); ?>")</span><?php endif; ?></p>
+        <?php if ($tab === 'all' || $tab === 'orders' || $tab === 'completed'): ?>
+            <?php if ($tab !== 'clearances'): ?>
             <div class="section-title">Travel Orders</div>
 
             <?php if (count($travel_orders) > 0): ?>
@@ -204,10 +281,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                     <h3>No travel orders found.</h3>
                     <p>There are no travel orders available right now.</p>
                 </div>
+            <?php elseif ($tab === 'completed' && count($travel_orders) === 0): ?>
+                <div class="empty-state">
+                    <h3>No completed travel orders found.</h3>
+                    <p>There are no completed travel orders for the selected period.</p>
+                </div>
+            <?php endif; ?>
             <?php endif; ?>
         <?php endif; ?>
 
-        <?php if ($tab === 'all' || $tab === 'clearances'): ?>
+        <?php if ($tab === 'all' || $tab === 'clearances' || $tab === 'completed'): ?>
+            <?php if ($tab !== 'orders'): ?>
             <div class="section-title">Travel Clearance</div>
 
             <?php if (count($travel_clearances) > 0): ?>
@@ -258,6 +342,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_order_btn'])) {
                     <h3>No travel clearances found.</h3>
                     <p>There are no travel clearances available right now.</p>
                 </div>
+            <?php elseif ($tab === 'completed' && count($travel_clearances) === 0): ?>
+                <div class="empty-state">
+                    <h3>No completed travel clearances found.</h3>
+                    <p>There are no completed travel clearances for the selected period.</p>
+                </div>
+            <?php endif; ?>
             <?php endif; ?>
         <?php endif; ?>
 

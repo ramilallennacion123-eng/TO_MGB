@@ -32,6 +32,13 @@ $assistants_array = json_decode($T_order['assistants'], true);
 $appropriation = $T_order['appropriation'] ?? '';
 $remarks = $T_order['remarks'] ?? '';
 
+$applicant_x = ($T_order['applicant_sig_x'] ?? 300) + 7;
+$applicant_y = ($T_order['applicant_sig_y'] ?? 360) + 7;
+$do_x = ($T_order['do_sig_x'] ?? 50) + 7;
+$do_y = ($T_order['do_sig_y'] ?? 180) + 7;
+$rd_x = ($T_order['rd_sig_x'] ?? 480) + 7;
+$rd_y = ($T_order['rd_sig_y'] ?? 180) + 7;
+
 $new_departure_date = new DateTime($departure_date);
 $new_arrival_date = new DateTime($arrival_date);
 $officer_id = $T_order['officer_id'] ?? null;
@@ -56,41 +63,22 @@ $rd_result = $stmt->fetch(PDO::FETCH_ASSOC);
 $rd_name = $rd_result['name'];
 $rd_position = $rd_result['position'];
 
-function getSignatureHtml($db_path, $maxWidth = 150, $maxHeight = 70, $minHeight = 50, $minWidth = 80) {
+function getSignatureHtml($db_path, $maxWidth = 150, $maxHeight = 70) {
     if (empty($db_path)) {
         return '';
     }
+    
     $clean_db_path = str_replace('../', '', $db_path);
     $actual_path = dirname(__DIR__) . '/' . $clean_db_path; 
 
     if (file_exists($actual_path)) {
-        $imageInfo = getimagesize($actual_path);
-        $origWidth = $imageInfo[0];
-        $origHeight = $imageInfo[1];
-        
-        $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight);
-        $newWidth = round($origWidth * $ratio);
-        $newHeight = round($origHeight * $ratio);
-        
-        if ($newHeight < $minHeight) {
-            $ratio = $minHeight / $origHeight;
-            $newWidth = round($origWidth * $ratio);
-            $newHeight = $minHeight;
-        }
-        
-        if ($newWidth < $minWidth) {
-            $ratio = $minWidth / $origWidth;
-            $newWidth = $minWidth;
-            $newHeight = round($origHeight * $ratio);
-        }
-        
         $mime_type = mime_content_type($actual_path);
         $imgData = base64_encode(file_get_contents($actual_path));
         $src = 'data:' . $mime_type . ';base64,' . $imgData;
         
-        return "<img src='" . $src . "' style='width: " . $newWidth . "px; height: " . $newHeight . "px; display: block; margin: 0 auto; margin-bottom: 0px;'>";
+        return "<img src='" . $src . "' style='max-width: " . $maxWidth . "px; max-height: " . $maxHeight . "px; display: block;'>";
     } else {
-        return "<div style='color: red; font-size: 10px;'>Error: Image not found at " . htmlspecialchars($actual_path) . "</div>";
+        return "<div style='color: red; font-size: 10px;'>Error: Image not found</div>";
     }
 }
 
@@ -98,34 +86,55 @@ $applicant_sign = $T_order['applicant_signature'] ?? '';
 $do_sign = $T_order['do_signature'] ?? '';
 $rd_sign = $T_order['rd_signature'] ?? '';
 
-$applicant_signatureHtml = getSignatureHtml($applicant_sign, 150, 100, 60, 100);
-$do_signatureHtml        = getSignatureHtml($do_sign, 150, 60, 45, 80);
-$rd_signatureHtml        = getSignatureHtml($rd_sign, 150, 60, 45, 80);
-
- 
+$applicant_signatureHtml = getSignatureHtml($applicant_sign, 200, 100);
+$do_signatureHtml        = getSignatureHtml($do_sign, 150, 60);
+$rd_signatureHtml        = getSignatureHtml($rd_sign, 160, 80);
 
 $options = new Options();
-$options ->set('isHtml5ParserEnabled', true);
+$options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
+$options->set('dpi', 96); 
 $dompdf = new Dompdf($options);
 
 
 $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($name).'   TRAVEL ORDER </title>
     <style>
-        body { font-family: "Times New Roman", Times, serif; }
+        body { font-family: "Times New Roman", Times, serif; position: relative; }
         .form-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .form-table td { padding: 4px 4px; vertical-align: bottom; }
-        .label-cell { white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 1; padding-bottom: 1px; }
-        .line-cell { border-bottom: 1px solid black; width: 99%; text-align: left; vertical-align: bottom; line-height: 1; padding-bottom: 0px; }
+        .label-cell {font-size: 11pt; white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 1; padding-bottom: 1px; }
+        .line-cell { font-size: 11pt; border-bottom: 1px solid black; width: 99%; text-align: left; vertical-align: bottom; line-height: 1; padding-bottom: 0px; }
         .inner-row { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
+        p{font-size:11pt;}
+        @page {
+            margin-top: .70in;
+            margin-right: 1in;
+            margin-bottom: 0.50in;
+            margin-left: 1in;
+        }
+        /* Style for absolute signatures */
+        .signature-overlay {
+            position: absolute;
+            z-index: 10;
+        }
     </style>
     </head><body>';
+        //signature
+        if (!empty($applicant_sign)) {
+            $html .= '<div class="signature-overlay" style="left: '.$applicant_x.'px; top: '.$applicant_y.'px;">'.$applicant_signatureHtml.'</div>';
+        }
+        if (!empty($do_sign)) {
+            $html .= '<div class="signature-overlay" style="left: '.$do_x.'px; top: '.$do_y.'px;">'.$do_signatureHtml.'</div>';
+        }
+        if (!empty($rd_sign)) {
+            $html .= '<div class="signature-overlay" style="left: '.$rd_x.'px; top: '.$rd_y.'px;">'.$rd_signatureHtml.'</div>';
+        }
     
-    $html .= '<h6 style="text-align:center; margin-bottom:0;">Republic of the Philippines</h6>
-        <h6 style="text-align:center; margin-top:0px;margin-bottom:0px;">Department of Environment and Natural Resources</h6>
-        <h5 style="text-align:center; margin-top:0px; margin-bottom:0;">MINES AND GEOSCIENCES BUREAU-V</h5>
-        <h6 style="text-align:center; margin-top:0;">Regional Center, Rawis, Legazpi City</h6>
-        <h5 style="text-align:center; margin-bottom:0;">TRAVEL ORDER</h5>
+    $html .= '<p style=" text-align:center; margin-bottom:0;">Republic of the Philippines</p>
+        <p style="text-align:center; margin-top:0px;margin-bottom:0px;">Department of Environment and Natural Resources</p>
+        <p style="font-weight: bold; text-align:center; margin-top:0px; margin-bottom:0;">MINES AND GEOSCIENCES BUREAU-V</p>
+        <p style="text-align:center; margin-top:0;">Regional Center, Rawis, Legazpi City</p>
+        <p style="text-align:center; margin-bottom:0;">TRAVEL ORDER</p>
         <p style="text-align:center; margin-top:0;">(No._________________)</p>
         <br>
         <table class="form-table">
@@ -205,7 +214,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
         <br>
         <table style="width: 100%; border-collapse: collapse; font-size:13px">
             <tr>
-                <td style="width: 1%; white-space: nowrap; vertical-align: top; padding-right: 10px;">
+                <td style=" font-size: 11pt; width: 1%; white-space: nowrap; vertical-align: top; padding-right: 10px;">
                     Purpose of Travel:
                 </td>
                 <td style="vertical-align: top;">
@@ -213,7 +222,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
                     
                     if(!empty($purposes_array)){
                         foreach ($purposes_array as $purpose) {
-                            $html .= '<li style="margin-bottom: 4px; text-align: justify;">' . htmlspecialchars($purpose) . '</li>';
+                            $html .= '<li style="font-size: 11pt; margin-bottom: 4px; text-align: justify;">' . htmlspecialchars($purpose) . '</li>';
                         }
                     }
                     
@@ -240,7 +249,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
                     $sanitized = array_map('htmlspecialchars', $assistants_array);
                     $html .= implode(', ', $sanitized);
                 }
-                
+                  
                 $html .= '</td>
             </tr>
         </table>
@@ -264,47 +273,50 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
 
         </table>
         
-        <h5>Certifications:</h5>
-        <div style="text-indent: 3em; font-size:13px">This is to certify that the travel is necessary and is connected with the function of the 
+        <p style="font-weight: bold;">Certifications:</p>
+        <div style="text-indent: 3em; font-size:11pt; text-align: justify;">This is to certify that the travel is necessary and is connected with the function of the 
         official/employee of this Div/Sec/Unit.</div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+        <td style="width: 50%; vertical-align: bottom;">
+        <p style="margin-bottom: 5px;">Recommending Approval:</p>
+        </td>
+        <td style="width: 50%; vertical-align: bottom;"><p style="font-size:11pt; margin-bottom: 5px;">Approved:</p></td>
+        </tr>
+        </table>
+        
 
-        <div style="border-bottom: 1px solid black; width: 100%; padding-bottom: 10px;">
+        <div style="border-bottom: 1px solid black; width: 100%; padding-bottom: 10px; margin-top: 0px; position: relative; min-height: 50px;">
     <table style="width: 100%; border-collapse: collapse;">
         <tr>
             <td style="width: 50%; vertical-align: bottom;">
-                <p style="font-size:13px; margin-bottom: 5px;">Recommending Approval:</p>
-                <div style="text-align: left; margin-bottom: -10px;">'.$do_signatureHtml.'</div>
-                <p style="font-size:13px; font-weight: bold; margin: 0; text-align: left;">
+                <p style="font-size:13px; font-weight: bold; margin: 40px 0 0 0; text-align: left;">
                     <u>'.strtoupper($officer_name).'</u>
                 </p>
-                <p style="font-size:12px; margin: 0; text-align: left;">'.$officer_position.'</p>
+                <p style="font-size:11pt; margin: 0; text-align: left;">'.$officer_position.'</p>
             </td>
 
             <td style="width: 50%; vertical-align: bottom;">
-                <p style="font-size:13px; margin-bottom: 5px;">Approved:</p>
-                <div style="position:relative; left:20%; margin-bottom: -30px;">'.$rd_signatureHtml.'</div>
-                <p style="font-size:13px; font-weight: bold; margin: 0; text-align: left;">
+                <p style="font-size:13px; font-weight: bold; margin: 40px 0 0 0; text-align: left;">
                     <u>'.strtoupper($rd_name).'</u>
                 </p>
-                <p style="font-size:12px; margin: 0; text-align: left;">'.$rd_position.'</p>
+                <p style="font-size:11pt; margin: 0; text-align: left;">'.$rd_position.'</p>
             </td>
         </tr>
     </table>
 </div>
         
-        <h5 style="text-align:center;">AUTHORIZATION</h5>
-        <div style="text-indent: 2em; font-size:12px; text-align:justifty;">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated cash advance from my succeding
+        <p style="text-align:center; font-weight: bold; margin-top: 15px;">AUTHORIZATION</p>
+        <p style="text-indent: 2em; font-size:11pt; text-align:justify;">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated cash advance from my succeding
         for my failure to liquidate this travel within twenty(20) days upon return to my permanent official station pursuant to 
-        Commission on Audit(COA) Circular No. 2012-004 dated November 28, 2012.</div>
+        Commission on Audit(COA) Circular No. 2012-004 dated November 28, 2012.</p>
 
-        <div style="text-align: center; margin-top: 10 px; margin-bottom: -20px;">
-            ' .$applicant_signatureHtml. '
-            </div>
+        <div style="text-align: center; margin-top: 50px; position: relative; min-height: 50px;">
+            <p style="text-align:center; margin-bottom:0px; margin-top: 0px; font-weight: bold;">'.strtoupper($name).'</p>
+            <div style="font-size:11pt;text-align:center; margin-bottom:0px;">Official Employee</div>
+        </div>';
 
-        <h4 style="text-align:center; margin-bottom:0px; margin-top: 0px;">'.strtoupper($name).'</h4>
-        <div style="font-size:12px;text-align:center; margin-bottom:0px;">Official Employee</div>
-        ';
-
+    
         
 $html .='</body></html>';   
 $dompdf->loadHtml($html);
@@ -313,6 +325,6 @@ $dompdf->render();
 if (ob_get_contents()) {
     ob_end_clean();
 } 
-$dompdf->stream("Travel_Order.pdf", array("Attachment" => 0));
+$dompdf->stream($name."_Travel_Order.pdf", array("Attachment" => 0));
 exit; 
 ?>

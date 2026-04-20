@@ -134,9 +134,10 @@ if(!is_array($assistants)){
   <link rel="stylesheet" type="text/css" href="../style/review_to.css">
 </head>
 <body>
-  
     <div class="box">
+      <button type="button" class="btn btn-back" onclick="window.location.href='index.php'">Back to Dashboard</button>
         <h1>Review Travel Order</h1>
+
 
         <div class="detail-grid">
             <div class="detail-item"><strong>Name</strong> <?php echo htmlspecialchars($order['name']); ?></div>
@@ -221,6 +222,7 @@ if(!is_array($assistants)){
         <button type="button" class="btn attach-btn" onclick="checkSignatures('pending_rd')">Attach Signatures and send to Planner</button>
       <?php elseif($current_status == 'approved'): ?>
         <button type="submit" name="complete_btn" class="btn btn-approve">Mark as Completed</button>
+        <a class="btn btn-download-pdf" href="adjust_signatures_to.php?id=<?php echo $order['id']; ?>">Adjust Signatures & Download PDF</a>
       <?php elseif($current_status == 'completed'): ?>
         <div class="modal-overlay" id="completedModal">
           <div class="modal-content">
@@ -228,9 +230,8 @@ if(!is_array($assistants)){
             <button class="closeBtn" type="button" id="closeBtn">Ok</button>
           </div>
         </div>
+        <a class="btn btn-download-pdf" href="adjust_signatures_to.php?id=<?php echo $order['id']; ?>">Adjust Signatures & Download PDF</a>
       <?php endif; ?>
-      <a class="btn btn-download-pdf" href="TO_pdf.php?id=<?php echo $order['id']; ?>">Download PDF</a>
-      <button type="button" class="btn btn-back" onclick="window.location.href='index.php'">Back to Dashboard</button>
     </form>
   </div>
 <div id="signatureModal" style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">

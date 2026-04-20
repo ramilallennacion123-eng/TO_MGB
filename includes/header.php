@@ -18,7 +18,7 @@ $user_data = mysqli_fetch_assoc($result);
 <div class="universal-header">
     <div class ="user-info"><?php echo htmlspecialchars(strtoupper($user_data['role'])) . ' - ' . htmlspecialchars($user_data['name'] ?? $_SESSION['username']); ?></div>
     <?php if($user_data['role'] === 'ict'): ?>
-    <a href="<?php echo ($_SESSION['role'] === 'ict') ? 'get-account.php' : '../ict/get-account.php'; ?>" class="accounts-btn">Accounts</a>
+    <a href="../ict/get-account.php" class="accounts-btn">Accounts</a>
     <?php endif; ?>
     <div class="user-menu">
         <img src="../images/mgb_logo.png" alt="" class="profile">

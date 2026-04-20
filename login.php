@@ -72,24 +72,25 @@ if (isset($_POST['login_btn'])) {
 </head>
 <body>
 
-<div class="login-box">
-    <div style="text-align: left; margin-bottom: 20px;">
-        <a href="../TO_MGB/index.php" class="btn login-btn return-icon-btn" title="Return">&#8617;</a>
+<div class="background">
+    <div class="login-box">
+        <div style="text-align: left; margin-bottom: 20px;">
+            <a href="../TO_MGB/index.php" class="btn login-btn return-icon-btn" title="Return">&#8617;</a>
+        </div>
+        
+        <h2>Login</h2>
+        
+        <?php if ($error_msg): ?>
+            <div class="error"><?php echo $error_msg; ?></div>
+        <?php endif; ?>
+
+        <form action="login.php" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit" name="login_btn">Login</button>
+        </form>
     </div>
-    
-    <h2>Login</h2>
-    
-    <?php if ($error_msg): ?>
-        <div class="error"><?php echo $error_msg; ?></div>
-    <?php endif; ?>
-
-    <form action="login.php" method="POST">
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit" name="login_btn">Login</button>
-    </form>
 </div>
-
 </body>
 
 <script>

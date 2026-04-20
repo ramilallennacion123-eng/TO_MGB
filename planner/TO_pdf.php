@@ -65,30 +65,73 @@ function getSignatureHtml($db_path, $maxWidth = 150, $maxHeight = 70, $minHeight
 
     if (file_exists($actual_path)) {
         $imageInfo = getimagesize($actual_path);
-        $origWidth = $imageInfo[0];
-        $origHeight = $imageInfo[1];
-        
-        $ratio = min($maxWidth / $origWidth, $maxHeight / $origHeight);
-        $newWidth = round($origWidth * $ratio);
-        $newHeight = round($origHeight * $ratio);
-        
-        if ($newHeight < $minHeight) {
-            $ratio = $minHeight / $origHeight;
-            $newWidth = round($origWidth * $ratio);
-            $newHeight = $minHeight;
-        }
-        
-        if ($newWidth < $minWidth) {
-            $ratio = $minWidth / $origWidth;
-            $newWidth = $minWidth;
-            $newHeight = round($origHeight * $ratio);
-        }
-        
         $mime_type = mime_content_type($actual_path);
+        
+        $src_img = imagecreatefrompng($actual_path);
+        if ($src_img !== false) {
+            imagesavealpha($src_img, true);
+            
+            $width = imagesx($src_img);
+            $height = imagesy($src_img);
+            $bounds = ['left' => $width, 'right' => 0, 'top' => $height, 'bottom' => 0];
+            
+            for ($y = 0; $y < $height; $y++) {
+                for ($x = 0; $x < $width; $x++) {
+                    $rgba = imagecolorat($src_img, $x, $y);
+                    $alpha = ($rgba & 0x7F000000) >> 24;
+                    if ($alpha < 127) {
+                        if ($x < $bounds['left']) $bounds['left'] = $x;
+                        if ($x > $bounds['right']) $bounds['right'] = $x;
+                        if ($y < $bounds['top']) $bounds['top'] = $y;
+                        if ($y > $bounds['bottom']) $bounds['bottom'] = $y;
+                    }
+                }
+            }
+            
+            if ($bounds['right'] >= $bounds['left'] && $bounds['bottom'] >= $bounds['top']) {
+                $trimWidth = $bounds['right'] - $bounds['left'] + 1;
+                $trimHeight = $bounds['bottom'] - $bounds['top'] + 1;
+                
+                $trimmed = imagecreatetruecolor($trimWidth, $trimHeight);
+                imagealphablending($trimmed, false);
+                imagesavealpha($trimmed, true);
+                $transparent = imagecolorallocatealpha($trimmed, 255, 255, 255, 127);
+                imagefill($trimmed, 0, 0, $transparent);
+                
+                imagecopy($trimmed, $src_img, 0, 0, $bounds['left'], $bounds['top'], $trimWidth, $trimHeight);
+                
+                ob_start();
+                imagepng($trimmed);
+                $imgData = base64_encode(ob_get_clean());
+                
+                imagedestroy($trimmed);
+                imagedestroy($src_img);
+                
+                $ratio = min($maxWidth / $trimWidth, $maxHeight / $trimHeight);
+                $newWidth = round($trimWidth * $ratio);
+                $newHeight = round($trimHeight * $ratio);
+                
+                if ($newHeight < $minHeight) {
+                    $ratio = $minHeight / $trimHeight;
+                    $newWidth = round($trimWidth * $ratio);
+                    $newHeight = $minHeight;
+                }
+                
+                if ($newWidth < $minWidth) {
+                    $ratio = $minWidth / $trimWidth;
+                    $newWidth = $minWidth;
+                    $newHeight = round($trimHeight * $ratio);
+                }
+                
+                $src = 'data:image/png;base64,' . $imgData;
+                return "<img src='" . $src . "' style='width: " . $newWidth . "px; height: " . $newHeight . "px; display: block; margin: 0 auto; margin-bottom: 0px;'>";
+            }
+            imagedestroy($src_img);
+        }
+        
         $imgData = base64_encode(file_get_contents($actual_path));
         $src = 'data:' . $mime_type . ';base64,' . $imgData;
-        
-        return "<img src='" . $src . "' style='width: " . $newWidth . "px; height: " . $newHeight . "px; display: block; margin: 0 auto; margin-bottom: 0px;'>";
+        return "<img src='" . $src . "' style='width: " . $maxWidth . "px; height: " . $maxHeight . "px; display: block; margin: 0 auto; margin-bottom: 0px;'>";
     } else {
         return "<div style='color: red; font-size: 10px;'>Error: Image not found at " . htmlspecialchars($actual_path) . "</div>";
     }
@@ -98,9 +141,9 @@ $applicant_sign = $T_order['applicant_signature'] ?? '';
 $do_sign = $T_order['do_signature'] ?? '';
 $rd_sign = $T_order['rd_signature'] ?? '';
 
-$applicant_signatureHtml = getSignatureHtml($applicant_sign, 150, 100, 60, 100);
-$do_signatureHtml        = getSignatureHtml($do_sign, 150, 60, 45, 80);
-$rd_signatureHtml        = getSignatureHtml($rd_sign, 150, 60, 45, 80);
+$applicant_signatureHtml = getSignatureHtml($applicant_sign, 120, 80, 0, 0);
+$do_signatureHtml        = getSignatureHtml($do_sign, 150, 60, 0, 0);
+$rd_signatureHtml        = getSignatureHtml($rd_sign, 160, 80, 0, 0);
 
  
 
@@ -115,17 +158,24 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
         body { font-family: "Times New Roman", Times, serif; }
         .form-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .form-table td { padding: 4px 4px; vertical-align: bottom; }
-        .label-cell { white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 1; padding-bottom: 1px; }
-        .line-cell { border-bottom: 1px solid black; width: 99%; text-align: left; vertical-align: bottom; line-height: 1; padding-bottom: 0px; }
+        .label-cell {font-size: 11pt; white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 1; padding-bottom: 1px; }
+        .line-cell { font-size: 11pt; border-bottom: 1px solid black; width: 99%; text-align: left; vertical-align: bottom; line-height: 1; padding-bottom: 0px; }
         .inner-row { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
+        p{font-size:11pt;}
+        @page {
+            margin-top: .70in;
+            margin-right: 1in;
+            margin-bottom: 0.50in;
+            margin-left: 1in;
+        }
     </style>
     </head><body>';
     
-    $html .= '<h6 style="text-align:center; margin-bottom:0;">Republic of the Philippines</h6>
-        <h6 style="text-align:center; margin-top:0px;margin-bottom:0px;">Department of Environment and Natural Resources</h6>
-        <h5 style="text-align:center; margin-top:0px; margin-bottom:0;">MINES AND GEOSCIENCES BUREAU-V</h5>
-        <h6 style="text-align:center; margin-top:0;">Regional Center, Rawis, Legazpi City</h6>
-        <h5 style="text-align:center; margin-bottom:0;">TRAVEL ORDER</h5>
+    $html .= '<p style=" text-align:center; margin-bottom:0;">Republic of the Philippines</p>
+        <p style="text-align:center; margin-top:0px;margin-bottom:0px;">Department of Environment and Natural Resources</p>
+        <p style="font-weight: bold; text-align:center; margin-top:0px; margin-bottom:0;">MINES AND GEOSCIENCES BUREAU-V</p>
+        <p style="text-align:center; margin-top:0;">Regional Center, Rawis, Legazpi City</p>
+        <p style="text-align:center; margin-bottom:0;">TRAVEL ORDER</p>
         <p style="text-align:center; margin-top:0;">(No._________________)</p>
         <br>
         <table class="form-table">
@@ -205,7 +255,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
         <br>
         <table style="width: 100%; border-collapse: collapse; font-size:13px">
             <tr>
-                <td style="width: 1%; white-space: nowrap; vertical-align: top; padding-right: 10px;">
+                <td style=" font-size: 11pt; width: 1%; white-space: nowrap; vertical-align: top; padding-right: 10px;">
                     Purpose of Travel:
                 </td>
                 <td style="vertical-align: top;">
@@ -213,7 +263,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
                     
                     if(!empty($purposes_array)){
                         foreach ($purposes_array as $purpose) {
-                            $html .= '<li style="margin-bottom: 4px; text-align: justify;">' . htmlspecialchars($purpose) . '</li>';
+                            $html .= '<li style="font-size: 11pt; margin-bottom: 4px; text-align: justify;">' . htmlspecialchars($purpose) . '</li>';
                         }
                     }
                     
@@ -240,7 +290,7 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
                     $sanitized = array_map('htmlspecialchars', $assistants_array);
                     $html .= implode(', ', $sanitized);
                 }
-                
+                  
                 $html .= '</td>
             </tr>
         </table>
@@ -264,45 +314,51 @@ $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>'.strtoupper($n
 
         </table>
         
-        <h5>Certifications:</h5>
-        <div style="text-indent: 3em; font-size:13px">This is to certify that the travel is necessary and is connected with the function of the 
+        <p style="font-weight: bold;">Certifications:</p>
+        <div style="text-indent: 3em; font-size:11pt; text-align: justify;">This is to certify that the travel is necessary and is connected with the function of the 
         official/employee of this Div/Sec/Unit.</div>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr>
+        <td style="width: 50%; vertical-align: bottom;">
+        <p style="margin-bottom: 5px;">Recommending Approval:</p>
+        </td>
+        <td style="width: 50%; vertical-align: bottom;"><p style="font-size:11pt; margin-bottom: 5px;">Approved:</p></td>
+        </tr>
+        </table>
+        
 
-        <div style="border-bottom: 1px solid black; width: 100%; padding-bottom: 10px;">
+        <div style="border-bottom: 1px solid black; width: 100%; padding-bottom: 10px; margin-top: 0px;">
     <table style="width: 100%; border-collapse: collapse;">
         <tr>
             <td style="width: 50%; vertical-align: bottom;">
-                <p style="font-size:13px; margin-bottom: 5px;">Recommending Approval:</p>
                 <div style="text-align: left; margin-bottom: -10px;">'.$do_signatureHtml.'</div>
-                <p style="font-size:13px; font-weight: bold; margin: 0; text-align: left;">
+                <p style="font-size:13px; font-weight: bold; margin: 5px 0 0 0; text-align: left;">
                     <u>'.strtoupper($officer_name).'</u>
                 </p>
-                <p style="font-size:12px; margin: 0; text-align: left;">'.$officer_position.'</p>
+                <p style="font-size:11pt; margin: 0; text-align: left;">'.$officer_position.'</p>
             </td>
 
             <td style="width: 50%; vertical-align: bottom;">
-                <p style="font-size:13px; margin-bottom: 5px;">Approved:</p>
-                <div style="position:relative; left:20%; margin-bottom: -30px;">'.$rd_signatureHtml.'</div>
-                <p style="font-size:13px; font-weight: bold; margin: 0; text-align: left;">
+                <div style="position: relative; left: 30px; margin-bottom: -60px;">'.$rd_signatureHtml.'</div>
+                <p style="font-size:13px; font-weight: bold; margin: 5px 0 0 0; text-align: left;">
                     <u>'.strtoupper($rd_name).'</u>
                 </p>
-                <p style="font-size:12px; margin: 0; text-align: left;">'.$rd_position.'</p>
+                <p style="font-size:11pt; margin: 0; text-align: left;">'.$rd_position.'</p>
             </td>
         </tr>
     </table>
 </div>
         
-        <h5 style="text-align:center;">AUTHORIZATION</h5>
-        <div style="text-indent: 2em; font-size:12px; text-align:justifty;">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated cash advance from my succeding
+        <p style="text-align:center; font-weight: bold;">AUTHORIZATION</p>
+        <p style="text-indent: 2em; font-size:11pt; text-align:justify;">I hereby authorize the Accountant to deduct the corresponding amount of the unliquidated cash advance from my succeding
         for my failure to liquidate this travel within twenty(20) days upon return to my permanent official station pursuant to 
-        Commission on Audit(COA) Circular No. 2012-004 dated November 28, 2012.</div>
+        Commission on Audit(COA) Circular No. 2012-004 dated November 28, 2012.</p>
 
-        <div style="text-align: center; margin-top: 10 px; margin-bottom: -20px;">
+        <div style="text-align: center; margin-top: 0px; margin-bottom: -15px;">
             ' .$applicant_signatureHtml. '
-            </div>
-
-        <h4 style="text-align:center; margin-bottom:0px; margin-top: 10px;">'.strtoupper($name).'</h4>
-        <div style="font-size:12px;text-align:center; margin-bottom:0px;">Official Employee</div>
+        </div>
+        <p style="text-align:center; margin-bottom:0px; margin-top: 0px; font-weight: bold;">'.strtoupper($name).'</p>
+        <div style="font-size:11pt;text-align:center; margin-bottom:0px;">Official Employee</div>
         ';
 
         
@@ -313,6 +369,6 @@ $dompdf->render();
 if (ob_get_contents()) {
     ob_end_clean();
 } 
-$dompdf->stream("Travel_Order.pdf", array("Attachment" => 0));
+$dompdf->stream($name."_Travel_Order.pdf", array("Attachment" => 0));
 exit; 
 ?>

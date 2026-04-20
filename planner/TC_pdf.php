@@ -21,6 +21,7 @@ $location = $clearance['location'] ?? '';
 $travel_date = $clearance['travel_date'] ?? '';
 $purposes_array = json_decode($clearance['purpose'], true);
 
+
 $options = new Options();
 $options->set('isHtml5ParserEnabled', true);
 $options->set('isRemoteEnabled', true);
@@ -95,7 +96,7 @@ $formContent .= '</ul>
               </tr>
             </table>
           </td>
-            <tr><td style="height: 20px;"></td></tr>
+            <tr><td style="height: 5px;"></td></tr>
               <td style = "width: 100%;">
             <table class ="inner-row">
             <tr>
@@ -181,8 +182,8 @@ $html = '<!DOCTYPE html>
     .label-cell { white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 1; padding-bottom: 1px; font-weight:bold; padding-left:20px; font-size:9px;}
     .line-cell { border-bottom: 1px solid black; width: 100%; text-align: left; vertical-align: bottom; line-height: 1; padding-bottom: 0px;  }
     .inner-row { width: 100%; border-collapse: collapse; margin: 0; padding: 0; }
-    .check-cell{  white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 2; padding-bottom: 1px; padding-left:40px; font-size:6px;}
-    .inner-check-cell{  white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 2  ; padding-bottom: 1px; padding-left:55px; font-size:6px;}
+    .check-cell{  white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 2; padding-bottom: 1px; padding-left:40px; font-size:7px;}
+    .inner-check-cell{  white-space: nowrap; width: 1%; padding-right: 8px; vertical-align: bottom; line-height: 2  ; padding-bottom: 1px; padding-left:55px; font-size:7px;}
     .form-container { border: 2px solid black; height: 480px; position: relative; }
   </style>
 </head>
@@ -210,4 +211,4 @@ if (ob_get_contents()) {
 } 
 $dompdf->stream("travel_clearance.pdf", array("Attachment" => 0));
 exit; 
-?>  
+?>

@@ -124,7 +124,6 @@ $all_chief = $conn->query($sql);
                 </div>
                 
                 <div class="submit-row">
-                 <input type="submit" class="preview-btn" name="TO_form" value="Preview" formaction="process_TO.php"> 
                     <button type="submit" name="process_final_TO" id= "travelOrderData" value="Submit" formaction="process_final_TO.php">Submit</button>
                 </div>
             </div>
